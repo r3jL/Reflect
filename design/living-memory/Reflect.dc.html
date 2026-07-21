@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: oklch(0.974 0.006 84);
+    --paper-2: oklch(0.958 0.008 84);
+    --paper-3: oklch(0.930 0.010 82);
+    --paper-4: oklch(0.905 0.012 80);
+    --ink: oklch(0.30 0.014 55);
+    --ink-2: oklch(0.46 0.012 55);
+    --ink-3: oklch(0.62 0.010 58);
+    --ink-4: oklch(0.745 0.008 62);
+    --hair: oklch(0.885 0.010 78);
+    --hair-2: oklch(0.835 0.012 76);
+    --accent: oklch(0.56 0.088 52);
+    --accent-soft: oklch(0.70 0.055 54);
+    --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    background:var(--paper-4);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  a{ color:var(--accent); text-decoration:none; }
+  a:hover{ color:var(--ink); }
+  ::selection{ background:oklch(0.80 0.055 54 / 0.5); }
+  textarea{ font-family:var(--serif); }
+  .rf-scroll{ scrollbar-width:thin; scrollbar-color:var(--hair-2) transparent; }
+  .rf-scroll::-webkit-scrollbar{ width:9px; height:9px; }
+  .rf-scroll::-webkit-scrollbar-thumb{ background:var(--hair-2); border-radius:6px; border:3px solid transparent; background-clip:content-box; }
+  @keyframes rf-rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+  @keyframes rf-fade{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes rf-echo{ from{ opacity:0; transform:translateY(8px); filter:blur(4px); } to{ opacity:0.9; transform:none; filter:none; } }
+  @keyframes rf-sharpen{ from{ opacity:0; filter:blur(16px) saturate(0.6); transform:scale(1.03); } to{ opacity:1; filter:none; transform:none; } }
+  @keyframes rf-blink{ 0%,45%{ opacity:1; } 50%,95%{ opacity:0; } 100%{ opacity:1; } }
+  @keyframes rf-breathe{ 0%,100%{ opacity:0.55; transform:scale(1); } 50%{ opacity:1; transform:scale(1.35); } }
+  @keyframes rf-veil{ from{ opacity:1; } to{ opacity:0; visibility:hidden; } }
+</style>
+</helmet>
+
+<div style="position:fixed; inset:0; display:flex; flex-direction:column; background:var(--paper); overflow:hidden;">
+
+  <!-- ── window chrome ─────────────────────────────── -->
+  <div style="flex:0 0 auto; height:46px; display:flex; align-items:center; gap:20px; padding:0 18px; background:var(--paper); border-bottom:1px solid var(--hair); position:relative; z-index:40;">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div style="width:12px;height:12px;border-radius:50%;background:oklch(0.72 0.14 28);"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:oklch(0.82 0.10 85);"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:oklch(0.78 0.10 145);"></div>
+    </div>
+    <div style="font-family:var(--serif); font-size:16px; letter-spacing:0.01em; color:var(--ink); font-weight:500;">Reflect</div>
+    <nav style="display:flex; gap:2px; margin-left:14px;">
+      <button onClick="{{ goToday }}" style="{{ navTodayStyle }}">Today</button>
+      <button onClick="{{ goLife }}" style="{{ navLifeStyle }}">Life</button>
+      <button onClick="{{ goInsights }}" style="{{ navInsightsStyle }}">Insights</button>
+    </nav>
+    <div style="flex:1;"></div>
+    <button onClick="{{ goSearch }}" style="display:flex; align-items:center; gap:8px; background:var(--paper-2); border:1px solid var(--hair); color:var(--ink-3); font-family:var(--sans); font-size:12.5px; padding:6px 12px 6px 10px; border-radius:8px; cursor:pointer;" title="Remember something">
+      <span style="width:13px;height:13px;border:1.5px solid var(--ink-3); border-radius:50%; position:relative; display:inline-block;"><span style="position:absolute; width:5px;height:1.5px;background:var(--ink-3); transform:rotate(45deg); bottom:-1px; right:-3px;"></span></span>
+      Remember
+    </button>
+  </div>
+
+  <!-- ── stage ─────────────────────────────────────── -->
+  <div style="flex:1; position:relative; overflow:hidden;">
+
+    <!-- TODAY -->
+    <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+    <div class="rf-scroll" style="position:absolute; inset:0; overflow-y:auto;">
+      <div style="{{ todayContainerStyle }}">
+
+        <!-- left margin: echoes -->
+        <aside style="{{ leftAsideStyle }}">
+          <sc-for list="{{ todayEchoes }}" as="echo" hint-placeholder-count="2">
+            <div style="animation:rf-echo 1200ms both; animation-delay:{{ echo.delay }};">
+              <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:9px; display:flex; align-items:center; gap:7px;">
+                <span style="width:5px;height:5px;border-radius:50%;background:var(--accent-soft); animation:rf-breathe 4s ease-in-out infinite; animation-delay:{{ echo.delay }};"></span>
+                Memory echo
+              </div>
+              <p style="font-family:var(--serif); font-size:16px; line-height:1.5; color:var(--ink-2); margin:0; font-style:italic;">{{ echo.text }}</p>
+              <div style="font-family:var(--sans); font-size:11px; color:var(--ink-4); margin-top:8px;">{{ echo.when }}</div>
+            </div>
+          </sc-for>
+        </aside>
+
+        <!-- center: the writing -->
+        <main style="padding:120px 0 160px;">
+          <div style="animation:rf-rise 900ms both;">
+            <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-4); margin-bottom:14px;">{{ today.weekday }}</div>
+            <h1 style="font-family:var(--serif); font-weight:400; font-size:56px; line-height:1.02; letter-spacing:-0.015em; color:var(--ink); margin:0 0 6px;">{{ today.dateLong }}</h1>
+            <div style="display:flex; align-items:center; gap:14px; margin-top:14px; color:var(--ink-3); font-size:12.5px;">
+              <span style="display:flex; align-items:center; gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:{{ today.moodColor }};"></span>{{ today.moodLabel }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:var(--ink-4);"></span>
+              <span>{{ today.place }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:var(--ink-4);"></span>
+              <span>{{ today.weather }}</span>
+            </div>
+          </div>
+
+          <div style="margin-top:44px; animation:rf-rise 900ms both; animation-delay:180ms; position:relative;">
+            <div style="position:absolute; left:-2px; top:6px; width:2px; height:26px; background:var(--accent); opacity:{{ cursorOpacity }}; animation:rf-blink 1.15s step-end infinite;"></div>
+            <textarea
+              ref="{{ bodyRef }}"
+              value="{{ today.body }}"
+              onInput="{{ onBody }}"
+              onFocus="{{ onWriteFocus }}"
+              onBlur="{{ onWriteBlur }}"
+              placeholder="Begin…"
+              style="width:100%; border:none; outline:none; resize:none; background:transparent; font-family:var(--serif); font-size:22px; line-height:1.72; color:var(--ink); letter-spacing:0.002em; min-height:220px; overflow:hidden; padding:0;"></textarea>
+          </div>
+
+          <!-- inline photograph woven into the flow -->
+          <figure style="margin:26px 0 8px; animation:rf-sharpen 1400ms both; animation-delay:520ms;">
+            <div style="width:100%; height:300px; border-radius:6px; background:repeating-linear-gradient(135deg, var(--paper-2), var(--paper-2) 11px, var(--paper-3) 11px, var(--paper-3) 22px); display:flex; align-items:flex-end; justify-content:flex-start; padding:16px; box-shadow:0 1px 0 var(--hair), 0 20px 40px -28px oklch(0.3 0.02 60 / 0.6);"></div>
+            <figcaption style="font-family:var(--sans); font-size:11.5px; color:var(--ink-3); margin-top:11px; display:flex; gap:8px; align-items:center;">
+              <span style="font-family:ui-monospace,'SF Mono',monospace; font-size:10.5px; color:var(--ink-4);">[ photo ]</span>
+              {{ today.photoCaption }}
+            </figcaption>
+          </figure>
+
+          <div style="animation:rf-rise 900ms both; animation-delay:260ms; opacity:{{ marginOpacity }}; transition:opacity 700ms ease;">
+            <p style="font-family:var(--serif); font-size:22px; line-height:1.72; color:var(--ink); margin:0;">{{ today.bodyTail }}</p>
+          </div>
+
+          <!-- narrow-window inline living layer -->
+          <sc-if value="{{ isNarrow }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:56px; padding-top:34px; border-top:1px solid var(--hair); display:flex; flex-direction:column; gap:30px; opacity:{{ marginOpacity }}; transition:opacity 700ms ease;">
+            <div>
+              <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-4); margin-bottom:9px;">Reflect noticed</div>
+              <p style="font-family:var(--serif); font-size:19px; line-height:1.5; color:var(--ink-2); margin:0; font-style:italic;">{{ observation }}</p>
+              <button onClick="{{ reflectAgain }}" style="margin-top:12px; background:none; border:none; padding:0; cursor:pointer; font-family:var(--sans); font-size:11px; letter-spacing:0.04em; color:var(--accent); display:flex; align-items:center; gap:6px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--accent); opacity:{{ reflectingDot }};"></span>{{ reflectLabel }}</button>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:34px;">
+              <sc-for list="{{ todayEchoes }}" as="echo" hint-placeholder-count="2">
+                <div style="flex:1; min-width:220px;">
+                  <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:8px; display:flex; align-items:center; gap:7px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--accent-soft);"></span>Memory echo</div>
+                  <p style="font-family:var(--serif); font-size:16px; line-height:1.5; color:var(--ink-2); margin:0; font-style:italic;">{{ echo.text }}</p>
+                  <div style="font-family:var(--sans); font-size:11px; color:var(--ink-4); margin-top:8px;">{{ echo.when }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+        </main>
+
+        <!-- right margin: quiet AI observation + metadata -->
+        <aside style="{{ rightAsideStyle }}">
+          <div style="animation:rf-echo 1200ms both; animation-delay:700ms;">
+            <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-4); margin-bottom:9px;">Reflect noticed</div>
+            <p style="font-family:var(--serif); font-size:17px; line-height:1.52; color:var(--ink-2); margin:0; font-style:italic;">{{ observation }}</p>
+            <button onClick="{{ reflectAgain }}" style="margin-top:12px; background:none; border:none; padding:0; cursor:pointer; font-family:var(--sans); font-size:11px; letter-spacing:0.04em; color:var(--accent); display:flex; align-items:center; gap:6px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:var(--accent); opacity:{{ reflectingDot }};"></span>{{ reflectLabel }}
+            </button>
+          </div>
+          <div style="height:1px; background:var(--hair); width:44px;"></div>
+          <sc-for list="{{ todayMeta }}" as="m" hint-placeholder-count="3">
+            <div style="animation:rf-fade 1200ms both; animation-delay:820ms;">
+              <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-4); margin-bottom:5px;">{{ m.label }}</div>
+              <div style="font-family:var(--serif); font-size:16px; color:var(--ink-2);">{{ m.value }}</div>
+            </div>
+          </sc-for>
+        </aside>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- LIFE -->
+    <sc-if value="{{ isLife }}" hint-placeholder-val="{{ true }}">
+    <div class="rf-scroll" style="position:absolute; inset:0; overflow-y:auto;">
+      <div style="max-width:1120px; margin:0 auto; padding:76px 56px 120px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:8px;">
+          <div style="animation:rf-rise 800ms both;">
+            <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-4); margin-bottom:12px;">{{ life.season }} · {{ life.year }}</div>
+            <h1 style="font-family:var(--serif); font-weight:300; font-size:88px; line-height:0.9; letter-spacing:-0.02em; color:var(--ink); margin:0;">{{ life.month }}</h1>
+          </div>
+          <div style="display:flex; gap:6px; padding-bottom:12px;">
+            <button onClick="{{ prevMonth }}" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--hair); background:var(--paper); color:var(--ink-2); cursor:pointer; font-size:15px;">‹</button>
+            <button onClick="{{ nextMonth }}" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--hair); background:var(--paper); color:var(--ink-2); cursor:pointer; font-size:15px;">›</button>
+          </div>
+        </div>
+        <p style="font-family:var(--serif); font-style:italic; font-size:19px; color:var(--ink-3); max-width:560px; margin:0 0 40px; line-height:1.5; animation:rf-rise 800ms both; animation-delay:120ms;">{{ life.caption }}</p>
+
+        <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:10px;">
+          <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+            <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-4); text-align:center; padding-bottom:8px;">{{ w }}</div>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:8px;">
+          <sc-for list="{{ life.blanks }}" as="b" hint-placeholder-count="3">
+            <div></div>
+          </sc-for>
+          <sc-for list="{{ life.days }}" as="day" hint-placeholder-count="28">
+            <button ref="{{ day.setRef }}" onClick="{{ day.open }}" style="{{ day.cellStyle }}">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <span style="font-family:var(--sans); font-size:12px; font-weight:500; color:{{ day.numColor }};">{{ day.n }}</span>
+                <sc-if value="{{ day.milestone }}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;background:var(--accent); transform:rotate(45deg); margin-top:2px;"></span></sc-if>
+              </div>
+              <sc-if value="{{ day.hasEntry }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:3px;">
+                <sc-for list="{{ day.bars }}" as="bar" hint-placeholder-count="2">
+                  <div style="height:2px; border-radius:1px; background:{{ day.barColor }}; width:{{ bar.w }};"></div>
+                </sc-for>
+                <div style="display:flex; gap:4px; align-items:center; margin-top:5px; height:9px;">
+                  <sc-if value="{{ day.photo }}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;background:var(--ink-3);border-radius:1px;"></span></sc-if>
+                  <sc-if value="{{ day.travel }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border:1.4px solid var(--ink-3);border-radius:50%;"></span></sc-if>
+                  <sc-if value="{{ day.book }}" hint-placeholder-val="{{ false }}"><span style="width:3px;height:9px;background:var(--ink-3);border-radius:1px;"></span></sc-if>
+                  <sc-if value="{{ day.voice }}" hint-placeholder-val="{{ false }}"><span style="width:5px;height:5px;background:var(--accent-soft);border-radius:50%;"></span></sc-if>
+                </div>
+              </div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; gap:26px; flex-wrap:wrap; margin-top:48px; padding-top:26px; border-top:1px solid var(--hair);">
+          <sc-for list="{{ lifeLegend }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:9px; font-family:var(--sans); font-size:11.5px; color:var(--ink-3);">
+              <span style="{{ l.mark }}"></span>{{ l.label }}
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- INSIGHTS -->
+    <sc-if value="{{ isInsights }}" hint-placeholder-val="{{ true }}">
+    <div class="rf-scroll" style="position:absolute; inset:0; overflow-y:auto;">
+      <article style="max-width:820px; margin:0 auto; padding:96px 40px 160px;">
+        <header style="text-align:center; animation:rf-rise 900ms both;">
+          <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.28em; text-transform:uppercase; color:var(--ink-4); margin-bottom:22px;">{{ ins.kicker }}</div>
+          <h1 style="font-family:var(--serif); font-weight:300; font-size:118px; line-height:0.86; letter-spacing:-0.025em; color:var(--ink); margin:0;">{{ ins.month }}</h1>
+          <p style="font-family:var(--serif); font-style:italic; font-size:23px; line-height:1.5; color:var(--ink-2); max-width:560px; margin:34px auto 0;">“{{ ins.themeQuote }}”</p>
+        </header>
+
+        <div style="display:flex; justify-content:center; gap:52px; margin:56px 0; flex-wrap:wrap; animation:rf-fade 1200ms both; animation-delay:300ms;">
+          <sc-for list="{{ ins.stats }}" as="s" hint-placeholder-count="4">
+            <div style="text-align:center;">
+              <div style="font-family:var(--serif); font-weight:300; font-size:52px; line-height:1; color:var(--accent);">{{ s.value }}</div>
+              <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-4); margin-top:8px;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="width:44px; height:1px; background:var(--hair-2); margin:0 auto 56px;"></div>
+
+        <p style="font-family:var(--serif); font-size:22px; line-height:1.75; color:var(--ink); margin:0 0 34px;"><span style="font-size:64px; float:left; line-height:0.72; padding:6px 12px 0 0; font-weight:300; color:var(--accent);">{{ ins.dropcap }}</span>{{ ins.intro }}</p>
+
+        <sc-for list="{{ ins.sections }}" as="sec" hint-placeholder-count="4">
+          <section style="margin:64px 0;">
+            <h2 style="font-family:var(--sans); font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-4); margin:0 0 20px; display:flex; align-items:center; gap:14px;">{{ sec.label }}<span style="flex:1; height:1px; background:var(--hair);"></span></h2>
+            <sc-if value="{{ sec.pull }}" hint-placeholder-val="{{ false }}">
+              <p style="font-family:var(--serif); font-style:italic; font-weight:300; font-size:30px; line-height:1.4; color:var(--ink); margin:0 0 28px; letter-spacing:-0.01em;">{{ sec.pull }}</p>
+            </sc-if>
+            <p style="font-family:var(--serif); font-size:19px; line-height:1.72; color:var(--ink-2); margin:0;">{{ sec.body }}</p>
+            <sc-if value="{{ sec.hasImage }}" hint-placeholder-val="{{ false }}">
+              <figure style="margin:30px 0 4px;">
+                <div style="width:100%; height:340px; border-radius:6px; background:repeating-linear-gradient(135deg, var(--paper-2), var(--paper-2) 11px, var(--paper-3) 11px, var(--paper-3) 22px); box-shadow:0 20px 44px -30px oklch(0.3 0.02 60 / 0.6);"></div>
+                <figcaption style="font-family:var(--sans); font-size:11.5px; color:var(--ink-3); margin-top:11px;"><span style="font-family:ui-monospace,'SF Mono',monospace; font-size:10.5px; color:var(--ink-4);">[ photo ]</span> {{ sec.imageCaption }}</figcaption>
+              </figure>
+            </sc-if>
+          </section>
+        </sc-for>
+
+        <div style="margin-top:80px; padding:44px; background:var(--paper-2); border-radius:10px; text-align:center;">
+          <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-4); margin-bottom:18px;">Closing reflection</div>
+          <p style="font-family:var(--serif); font-style:italic; font-size:22px; line-height:1.6; color:var(--ink); margin:0;">{{ ins.closing }}</p>
+        </div>
+      </article>
+    </div>
+    </sc-if>
+
+    <!-- SEARCH -->
+    <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; background:oklch(0.930 0.010 82 / 0.72); backdrop-filter:blur(20px) saturate(1.1); animation:rf-fade 320ms both; z-index:30;">
+      <div class="rf-scroll" style="position:absolute; inset:0; overflow-y:auto;">
+        <div style="max-width:760px; margin:0 auto; padding:120px 40px 120px;">
+          <div style="position:relative; border-bottom:1px solid var(--hair-2); padding-bottom:16px; animation:rf-rise 500ms both;">
+            <input
+              ref="{{ searchRef }}"
+              value="{{ query }}"
+              onInput="{{ onQuery }}"
+              placeholder="What are you trying to remember?"
+              style="width:100%; border:none; outline:none; background:transparent; font-family:var(--serif); font-size:38px; font-weight:300; color:var(--ink); letter-spacing:-0.01em;">
+            <button onClick="{{ closeSearch }}" style="position:absolute; right:0; top:6px; width:34px;height:34px;border-radius:50%;border:1px solid var(--hair-2); background:var(--paper); color:var(--ink-3); cursor:pointer; font-size:14px;">✕</button>
+          </div>
+
+          <p style="font-family:var(--serif); font-style:italic; font-size:18px; line-height:1.5; color:var(--ink-2); margin:26px 0 10px; min-height:27px;">{{ searchLead }}</p>
+
+          <div style="margin-top:26px; display:flex; flex-direction:column; gap:38px;">
+            <sc-for list="{{ searchGroups }}" as="g" hint-placeholder-count="3">
+              <div style="animation:rf-echo 700ms both;">
+                <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:16px; display:flex; align-items:center; gap:12px;">{{ g.facet }}<span style="flex:1; height:1px; background:var(--hair);"></span></div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                  <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+                    <button onClick="{{ it.open }}" style="text-align:left; background:none; border:none; cursor:pointer; padding:0; display:block;">
+                      <div style="font-family:var(--sans); font-size:11px; color:var(--ink-4); margin-bottom:4px;">{{ it.when }}</div>
+                      <div style="font-family:var(--serif); font-size:20px; line-height:1.45; color:var(--ink);">{{ it.snippet }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ searchEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+              <sc-for list="{{ searchHints }}" as="h" hint-placeholder-count="5">
+                <button onClick="{{ h.pick }}" style="font-family:var(--sans); font-size:13px; color:var(--ink-2); background:var(--paper); border:1px solid var(--hair); padding:8px 15px; border-radius:20px; cursor:pointer;">{{ h.text }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ENTRY MORPH OVERLAY -->
+    <sc-if value="{{ entryOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-rf="scrim" ref="{{ scrimRef }}" onClick="{{ closeEntry }}" style="position:absolute; inset:0; background:oklch(0.30 0.02 60 / 0.28); backdrop-filter:blur(3px); z-index:50; opacity:0;"></div>
+    <div data-rf="entry" ref="{{ entryRef }}" style="position:absolute; z-index:51; background:var(--paper); border-radius:8px; overflow:hidden; box-shadow:0 40px 120px -30px oklch(0.25 0.02 60 / 0.55); transform-origin:top left; will-change:transform;">
+      <div class="rf-scroll" ref="{{ entryScrollRef }}" style="position:absolute; inset:0; overflow-y:auto;">
+        <div style="max-width:660px; margin:0 auto; padding:80px 56px 120px;">
+          <button onClick="{{ closeEntry }}" style="position:sticky; top:0; float:right; margin:-40px -20px 0 0; width:34px;height:34px;border-radius:50%;border:1px solid var(--hair); background:var(--paper); color:var(--ink-3); cursor:pointer; font-size:14px; z-index:2;">✕</button>
+          <div style="opacity:{{ entryContentOpacity }}; transition:opacity 400ms ease 220ms;">
+            <div style="font-family:var(--sans); font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-4); margin-bottom:14px;">{{ entry.weekday }}</div>
+            <h1 style="font-family:var(--serif); font-weight:400; font-size:52px; line-height:1.02; letter-spacing:-0.015em; color:var(--ink); margin:0 0 16px;">{{ entry.dateLong }}</h1>
+            <div style="display:flex; align-items:center; gap:14px; color:var(--ink-3); font-size:12.5px; margin-bottom:44px;">
+              <span style="display:flex; align-items:center; gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:{{ entry.moodColor }};"></span>{{ entry.moodLabel }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:var(--ink-4);"></span>
+              <span>{{ entry.place }}</span>
+            </div>
+            <sc-for list="{{ entry.paras }}" as="p" hint-placeholder-count="3">
+              <p style="font-family:var(--serif); font-size:21px; line-height:1.74; color:var(--ink); margin:0 0 26px;">{{ p.text }}</p>
+            </sc-for>
+            <sc-if value="{{ entry.hasPhoto }}" hint-placeholder-val="{{ false }}">
+              <figure style="margin:14px 0 30px;">
+                <div style="width:100%; height:280px; border-radius:6px; background:repeating-linear-gradient(135deg, var(--paper-2), var(--paper-2) 11px, var(--paper-3) 11px, var(--paper-3) 22px); box-shadow:0 20px 44px -30px oklch(0.3 0.02 60 / 0.6);"></div>
+                <figcaption style="font-family:var(--sans); font-size:11.5px; color:var(--ink-3); margin-top:11px;"><span style="font-family:ui-monospace,'SF Mono',monospace; font-size:10.5px; color:var(--ink-4);">[ photo ]</span> {{ entry.photoCaption }}</figcaption>
+              </figure>
+            </sc-if>
+            <sc-if value="{{ entry.hasEcho }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:44px; padding-left:22px; border-left:2px solid var(--accent-soft);">
+                <div style="font-family:var(--sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:9px;">Memory echo</div>
+                <p style="font-family:var(--serif); font-style:italic; font-size:18px; line-height:1.5; color:var(--ink-2); margin:0;">{{ entry.echo }}</p>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const MOODS = {
+      bright: { label:'bright', color:'oklch(0.74 0.10 82)', wash:'oklch(0.80 0.075 82 / 0.15)' },
+      warm:   { label:'warm',   color:'oklch(0.64 0.10 45)', wash:'oklch(0.72 0.08 45 / 0.15)' },
+      calm:   { label:'calm',   color:'oklch(0.66 0.06 155)', wash:'oklch(0.78 0.05 155 / 0.15)' },
+      low:    { label:'quiet',  color:'oklch(0.60 0.045 250)', wash:'oklch(0.72 0.035 250 / 0.16)' },
+    };
+    this.MOODS = MOODS;
+
+    // ── July 2026 — Elena Marchetti ──────────────────────────
+    this.july = {
+      1:{mood:'calm',density:2,excerpt:'Slow morning. The city is emptying out for summer.'},
+      2:{mood:'warm',density:1,voice:true,excerpt:'A long call with Mira. We are both tired and both fine.'},
+      3:{mood:'bright',density:2,photo:true,excerpt:'Packing for Lisbon. Only carry-on this time.'},
+      4:{mood:'bright',density:3,travel:true,photo:true,milestone:true,excerpt:'Landed. The light here is impossible to describe, so I keep trying.',
+         paras:['We landed in Lisbon just after four and the light did the thing it always does to me — turned everything the colour of old paper and made me want to write.',
+                'Theo found the apartment in Alfama with the blue tiles. From the window you can see three churches and a line of laundry that never seems to move.',
+                'I have decided not to make a plan for this week. That itself feels like the plan.'],
+         photoCaption:'Alfama rooftops, first evening', echo:'The last time you travelled without a plan was Kyoto, four years ago.'},
+      5:{mood:'bright',density:2,travel:true,photo:true,book:true,excerpt:'Read on the tram all afternoon. Missed my stop twice.'},
+      6:{mood:'warm',density:3,travel:true,photo:true,voice:true,excerpt:'The market, the hill, the small green door we could not open.',
+         paras:['Woke early and walked to the market before Theo was up. Bought figs and a coffee and sat on a step for an hour doing nothing at all.',
+                'Later we found a green door on a street with no name and spent twenty minutes deciding what must be behind it. A garden. A workshop. A very ordinary hallway. We will never know and that is somehow the best part.'],
+         photoCaption:'The green door, Rua sem nome', echo:'You write your longest entries when you are somewhere new.'},
+      7:{mood:'bright',density:2,travel:true,photo:true,excerpt:'Tiles, tiles, tiles. I photographed forty patterns and want them all.'},
+      8:{mood:'calm',density:3,travel:true,photo:true,book:true,excerpt:'Finished the book on the ferry. Cried a little, quietly.'},
+      9:{mood:'warm',density:2,travel:true,photo:true,milestone:true,excerpt:'Last day. Already rewriting it into memory.'},
+      11:{mood:'low',density:1,excerpt:'Home. The apartment feels loud after a week of tile floors.'},
+      12:{mood:'calm',density:2,book:true,excerpt:'Started a new book about cartographers. Making notes in the margin again.',
+         paras:['Back into the rhythm slowly. Started the book about the cartographers who drew coastlines they had never seen and were mostly right.',
+                'There is something in that I want to hold onto — the idea that you can map a place from its edges, from rumour and current and the shape of the wind.'],
+         echo:'Margins full of notes — the same way you read in university.'},
+      13:{mood:'warm',density:2,voice:true,excerpt:'Dinner with my sister. We talked about our mother for the first time in months.'},
+      15:{mood:'calm',density:3,project:true,excerpt:'The typeface finally has a name. Column. It has been unnamed for a year.',
+         paras:['The typeface has a name now. Column. It sat unnamed on my desktop for over a year, called only "new" and then "new-final" and then the thing you do to yourself, "new-final-2".',
+                'Naming it made it real in a way that drawing eight hundred glyphs somehow did not.'],
+         echo:'This project has quietly followed you for almost two years.'},
+      16:{mood:'bright',density:2,project:true,voice:true,excerpt:'Studio lease signed. My hands were shaking and I pretended they were not.'},
+      17:{mood:'bright',density:3,photo:true,milestone:true,project:true,excerpt:'We opened the studio doors. Six people came. It was enough. It was everything.',
+         paras:['We opened the studio today. Not officially — there was no sign, no announcement, just the door propped with a brick and the smell of paint we had not finished.',
+                'Six people came. Mira brought lemons for no reason anyone could explain. Theo took photographs of the empty rooms as if they were already full of a history we had not lived yet.',
+                'I keep thinking: this is the day I will describe to someone in ten years. So I am writing it carefully.'],
+         photoCaption:'The studio, morning of the first day', echo:'A year ago this week you wrote that you were afraid to begin.'},
+      18:{mood:'warm',density:2,photo:true,excerpt:'Slept until noon. Earned it.'},
+      19:{mood:'low',density:1,excerpt:'A quiet, grey Sunday. Did not write much. That is allowed.'},
+      20:{mood:'calm',density:2,book:true,excerpt:'Reading in the new studio for the first time. It already feels like ours.'},
+    };
+
+    this.state = {
+      view:'today',
+      body: "The studio is two days old and already it has a smell — coffee and cut wood and the particular dust of a room that is becoming something.\n\nI came in early before Theo, before anyone, and just stood in the middle of it. There is a stage in every project where it stops being an idea you are defending and becomes a place you are simply inside. We crossed it sometime yesterday afternoon and I did not notice until now.",
+      focus:false,
+      entryOpen:false,
+      entryVisible:false,
+      monthOffset:0,
+      query:'',
+      searchLead:'',
+      observation:'You write your longest entries in the days just after arriving somewhere — or just after building something.',
+      reflecting:false,
+      winW: (typeof window!=='undefined'? window.innerWidth : 1440),
+    };
+
+    this._refDay = {};
+    this._reflectTimer = null;
+    this._queryTimer = null;
+    this._countTimer = null;
+  }
+
+  componentDidMount(){
+    this._grow();
+    document.addEventListener('keydown', this._onKey);
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount(){
+    document.removeEventListener('keydown', this._onKey);
+    window.removeEventListener('resize', this._onResize);
+    clearTimeout(this._reflectTimer); clearTimeout(this._queryTimer); clearInterval(this._countTimer);
+  }
+  _onResize = ()=>{ clearTimeout(this._rzT); this._rzT=setTimeout(()=>this.setState({winW:window.innerWidth}),90); }
+  _onKey = (e)=>{
+    if(e.key==='Escape'){
+      if(this.state.entryOpen) this.closeEntry();
+      else if(this.state.view==='search') this.setState({view:'today'});
+    }
+    if((e.metaKey||e.ctrlKey) && e.key==='k'){ e.preventDefault(); this.openSearch(); }
+    if(this.state.view==='life' && !this.state.entryOpen){
+      if(e.key==='ArrowLeft') this.setState(s=>({monthOffset:s.monthOffset-1}));
+      if(e.key==='ArrowRight') this.setState(s=>({monthOffset:s.monthOffset+1}));
+    }
+  }
+
+  // ── writing ──────────────────────────────────────────────
+  bodyRef = (el)=>{ this._bodyEl = el; if(el) this._grow(); }
+  _grow(){ const el=this._bodyEl; if(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }
+  onBody = (e)=>{
+    const v=e.target.value; this.setState({body:v}); this._grow();
+    clearTimeout(this._reflectTimer);
+    this._reflectTimer=setTimeout(()=>this._reflect(v),1800);
+  }
+  onWriteFocus = ()=> this.setState({focus:true});
+  onWriteBlur = ()=> this.setState({focus:false});
+
+  reflectAgain = ()=> this._reflect(this.state.body);
+  async _reflect(text){
+    if(!text || text.trim().length<40 || this.state.reflecting) return;
+    this.setState({reflecting:true});
+    try{
+      const out = await window.claude.complete({
+        max_tokens:80,
+        system:"You are Reflect, a quiet companion living inside someone's private journal. You do not give advice or ask questions. You gently notice one pattern, feeling, or echo in what the person wrote, as if quietly remembering alongside them. Warm, observant, unhurried, human. Never clinical, never robotic, never a summary. Return ONE sentence, under 20 words, no quotation marks, no preamble.",
+        messages:[{role:'user', content:"Today I wrote:\n\n"+text+"\n\nNotice one thing, gently."}],
+      });
+      const clean = (out||'').trim().replace(/^["'\u201c]|["'\u201d]$/g,'');
+      if(clean) this.setState({observation:clean});
+    }catch(e){ /* keep authored observation */ }
+    this.setState({reflecting:false});
+  }
+
+  // ── nav ──────────────────────────────────────────────────
+  goToday = ()=> this.setState({view:'today'});
+  goLife = ()=> this.setState({view:'life'});
+  goInsights = ()=>{ this.setState({view:'insights'}); this._startCounts(); }
+  goSearch = ()=> this.openSearch();
+  openSearch = ()=>{ this.setState({view:'search'}); setTimeout(()=>this._searchEl&&this._searchEl.focus(),60); }
+  closeSearch = ()=> this.setState({view:'today', query:'', searchLead:''});
+  prevMonth = ()=> this.setState(s=>({monthOffset:s.monthOffset-1}));
+  nextMonth = ()=> this.setState(s=>({monthOffset:s.monthOffset+1}));
+
+  // ── count-ups ────────────────────────────────────────────
+  _startCounts(){
+    clearInterval(this._countTimer);
+    this._counts={pages:0,streak:0,ideas:0,moments:0};
+    const target={pages:24,streak:18,ideas:42,moments:3};
+    const t0=Date.now();
+    this._countTimer=setInterval(()=>{
+      const k=Math.min(1,(Date.now()-t0)/1100);
+      const e=1-Math.pow(1-k,3);
+      this._counts={pages:Math.round(target.pages*e),streak:Math.round(target.streak*e),ideas:Math.round(target.ideas*e),moments:Math.round(target.moments*e)};
+      this.forceUpdate();
+      if(k>=1) clearInterval(this._countTimer);
+    },40);
+  }
+
+  // ── entry morph ──────────────────────────────────────────
+  entryRef = (el)=>{ this._entryEl=el; }
+  scrimRef = (el)=>{ this._scrimEl=el; }
+  entryScrollRef = (el)=>{ this._entryScroll=el; }
+  makeOpen(n){ return (e)=>{ this.openDay(n, e.currentTarget); }; }
+  _els(){ return { el:document.querySelector('[data-rf="entry"]'), scrim:document.querySelector('[data-rf="scrim"]') }; }
+  openDay(n, cellEl){
+    if(!this.july[n]) return;
+    this._fromRect = cellEl ? cellEl.getBoundingClientRect() : null;
+    this._entryDay = n;
+    this.setState({entryOpen:true, entryVisible:false});
+    this._waitFor(()=>this._runMorph(true));
+  }
+  _waitFor(fn, tries){
+    tries = tries||0;
+    const { el } = this._els();
+    if(el){ setTimeout(fn, 24); return; }
+    if(tries>40) return;
+    setTimeout(()=>this._waitFor(fn, tries+1), 16);
+  }
+  _stageRect(){ return { w: window.innerWidth, h: window.innerHeight-46, top:46, left:0 }; }
+  _placeFull(el){
+    const s=this._stageRect();
+    el.style.left=s.left+'px'; el.style.top=s.top+'px';
+    el.style.width=s.w+'px'; el.style.height=s.h+'px';
+  }
+  _runMorph(opening){
+    const { el, scrim }=this._els(); if(!el) return;
+    this._placeFull(el);
+    const s=this._stageRect();
+    const r=this._fromRect;
+    let sx=0.2, sy=0.2, tx=s.w/2, ty=s.h/2;
+    if(r){ sx=r.width/s.w; sy=r.height/s.h; tx=r.left-s.left; ty=r.top-s.top; }
+    if(opening){
+      el.style.opacity='1';
+      el.style.transition='none';
+      el.style.transform=`translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
+      el.style.borderRadius='7px';
+      if(scrim){ scrim.style.transition='none'; scrim.style.opacity='0'; }
+      void el.offsetHeight; void (scrim&&scrim.offsetHeight);
+      setTimeout(()=>{
+        el.style.transition='transform 660ms cubic-bezier(0.22,1,0.36,1), border-radius 660ms ease';
+        el.style.transform='translate(0px,0px) scale(1,1)';
+        el.style.borderRadius='0px';
+        if(scrim){ scrim.style.transition='opacity 540ms ease'; scrim.style.opacity='1'; }
+        this.setState({entryVisible:true});
+      }, 24);
+    }else{
+      el.style.transition='transform 560ms cubic-bezier(0.5,0,0.2,1), border-radius 560ms ease';
+      el.style.transform=`translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
+      el.style.borderRadius='7px';
+      if(scrim){ scrim.style.transition='opacity 420ms ease'; scrim.style.opacity='0'; }
+      this.setState({entryVisible:false});
+      setTimeout(()=>this.setState({entryOpen:false}),580);
+    }
+  }
+  closeEntry = ()=>{
+    if(this.state.view!=='life' || !this._fromRect){
+      const { el, scrim }=this._els();
+      if(el){ el.style.transition='opacity 380ms ease, transform 380ms ease'; el.style.opacity='0'; el.style.transform='translate(0,0) scale(0.985)'; }
+      if(scrim){ scrim.style.transition='opacity 340ms ease'; scrim.style.opacity='0'; }
+      setTimeout(()=>this.setState({entryOpen:false, entryVisible:false}),380);
+      return;
+    }
+    this._runMorph(false);
+  }
+
+  _buildEntry(n){
+    const d=this.july[n]||{}; const m=this.MOODS[d.mood]||this.MOODS.calm;
+    const date=new Date(2026,6,n);
+    const wk=date.toLocaleDateString('en-US',{weekday:'long'});
+    const paras = d.paras ? d.paras.map((t,i)=>({text:t,key:'p'+i})) : [{text:d.excerpt||'A quiet day. Not every page needs to be full.',key:'p0'}];
+    return {
+      weekday:wk, dateLong:'July '+n,
+      moodColor:m.color, moodLabel:m.label,
+      place: d.travel ? 'Lisbon, Portugal' : 'Home',
+      paras,
+      hasPhoto: !!d.photo, photoCaption: d.photoCaption || 'from this day',
+      hasEcho: !!d.echo, echo: d.echo || '',
+    };
+  }
+
+  // ── search ───────────────────────────────────────────────
+  _memories(){
+    return [
+      {facet:'Places', when:'July 2026 · Lisbon', snippet:'The light here is impossible to describe, so I keep trying.', day:4, tags:['lisbon','travel','light','portugal','trip']},
+      {facet:'Places', when:'Sep 2022 · Kyoto', snippet:'We travelled without a plan and it became the whole point.', day:null, tags:['kyoto','travel','japan','plan','trip']},
+      {facet:'People', when:'July 13, 2026', snippet:'Dinner with my sister. We talked about our mother for the first time in months.', day:13, tags:['sister','family','mother','dinner','mira']},
+      {facet:'People', when:'ongoing', snippet:'Theo photographs empty rooms as if they are already full of history.', day:17, tags:['theo','partner','photographs']},
+      {facet:'Projects', when:'July 15, 2026', snippet:'The typeface finally has a name. Column.', day:15, tags:['column','typeface','type','studio','work','project']},
+      {facet:'Projects', when:'July 17, 2026', snippet:'We opened the studio doors. Six people came. It was everything.', day:17, tags:['studio','launch','project','work','open']},
+      {facet:'Books', when:'July 8, 2026', snippet:'Finished the book on the ferry. Cried a little, quietly.', day:8, tags:['book','reading','ferry','finished']},
+      {facet:'Books', when:'July 12, 2026', snippet:'A book about cartographers who drew coastlines they had never seen.', day:12, tags:['book','reading','maps','cartographers']},
+      {facet:'Feelings', when:'a recurring thread', snippet:'Afraid to begin — a feeling that appears every time before it matters.', day:null, tags:['fear','beginning','afraid','anxious','doubt']},
+      {facet:'Feelings', when:'this month', snippet:'Calmer than the previous three. Something has settled.', day:null, tags:['calm','peace','settled','happy','mood']},
+    ];
+  }
+  makeHint(t){ return ()=>{ this.setState({query:t}); this._senseQuery(t); }; }
+  onQuery = (e)=>{ const v=e.target.value; this.setState({query:v}); clearTimeout(this._queryTimer); this._queryTimer=setTimeout(()=>this._senseQuery(v),700); }
+  async _senseQuery(q){
+    if(!q || q.trim().length<3){ this.setState({searchLead:''}); return; }
+    const results=this._filter(q);
+    try{
+      const out=await window.claude.complete({
+        max_tokens:70,
+        system:"You are Reflect, helping someone rediscover their own memories. Given a search phrase, respond with one short, warm sentence that frames what they might be reaching for — as if gently helping them remember, not listing results. Under 18 words. No quotes, no preamble.",
+        messages:[{role:'user', content:'They are searching for: "'+q+'". They have '+results.length+' related memories.'}],
+      });
+      if((out||'').trim() && this.state.query===q) this.setState({searchLead:out.trim().replace(/^["'\u201c]|["'\u201d]$/g,'')});
+    }catch(e){
+      if(this.state.query===q) this.setState({searchLead: results.length? 'Some of this is coming back to you…' : 'Nothing surfaces yet. Try a place, a person, a feeling.'});
+    }
+  }
+  _filter(q){
+    const s=q.trim().toLowerCase();
+    return this._memories().filter(m=> m.snippet.toLowerCase().includes(s) || m.facet.toLowerCase().includes(s) || m.tags.some(t=>t.includes(s)||s.includes(t)));
+  }
+
+  // ── render ───────────────────────────────────────────────
+  _navStyle(active){
+    return `font-family:var(--sans); font-size:13px; padding:6px 12px; border-radius:7px; border:none; cursor:pointer; background:${active?'var(--paper-3)':'transparent'}; color:${active?'var(--ink)':'var(--ink-3)'}; font-weight:${active?'500':'400'};`;
+  }
+
+  renderVals(){
+    const st=this.state;
+    const view=st.view;
+
+    // Life grid
+    const base=new Date(2026,6,1);
+    const cur=new Date(base.getFullYear(), base.getMonth()+st.monthOffset, 1);
+    const y=cur.getFullYear(), mo=cur.getMonth();
+    const monthName=cur.toLocaleDateString('en-US',{month:'long'});
+    const seasonOf=(m)=>['Deep winter','Late winter','Early spring','Spring','Late spring','Early summer','High summer','Late summer','Early autumn','Autumn','Late autumn','Winter'][m];
+    const daysIn=new Date(y,mo+1,0).getDate();
+    const lead=new Date(y,mo,1).getDay();
+    const isJuly=(st.monthOffset===0);
+    const days=[];
+    for(let n=1;n<=daysIn;n++){
+      const info= isJuly ? this.july[n] : this._proc(y,mo,n);
+      const has=!!info;
+      const m=has? (this.MOODS[info.mood]||this.MOODS.calm) : null;
+      const dens= has? (info.density||1):0;
+      const bars=[];
+      const widths=['100%','78%','90%','64%'];
+      for(let i=0;i<dens;i++) bars.push({w:widths[i%4], key:'b'+n+'-'+i});
+      const future = isJuly && n>21;
+      days.push({
+        n, key:'d'+st.monthOffset+'-'+n,
+        hasEntry:has, milestone: has&&!!info.milestone,
+        photo:has&&!!info.photo, travel:has&&!!info.travel, book:has&&!!info.book, voice:has&&!!info.voice,
+        bars, barColor: m? m.color : 'var(--ink-4)',
+        numColor: future ? 'var(--ink-4)' : (n===21&&isJuly ? 'var(--accent)' : 'var(--ink-2)'),
+        cellStyle: `text-align:left; cursor:${has?'pointer':'default'}; border:1px solid ${n===21&&isJuly?'var(--accent)':'var(--hair)'}; border-radius:7px; background:${has? m.wash : 'var(--paper)'}; aspect-ratio:1; padding:9px; display:flex; flex-direction:column; transition:transform 220ms ease, box-shadow 220ms ease; ${has?'':'opacity:0.55;'}`,
+        setRef:(el)=>{ if(el) el.onmouseenter=()=>{ if(has){el.style.transform='translateY(-3px)';el.style.boxShadow='0 12px 24px -16px oklch(0.3 0.02 60 / 0.5)';} }; if(el) el.onmouseleave=()=>{ el.style.transform='none'; el.style.boxShadow='none'; }; },
+        open: has ? this.makeOpen(n) : (()=>{}),
+      });
+    }
+
+    // search
+    const q=st.query;
+    const results = q.trim().length>=1 ? this._filter(q) : [];
+    const facetOrder=['People','Places','Projects','Books','Feelings','Ideas','Travel','Time'];
+    const groupsMap={};
+    results.forEach(r=>{ (groupsMap[r.facet]=groupsMap[r.facet]||[]).push(r); });
+    const searchGroups=facetOrder.filter(f=>groupsMap[f]).map(f=>({
+      facet:f, key:f,
+      items:groupsMap[f].map((r,i)=>({ when:r.when, snippet:r.snippet, key:f+i, open: r.day? this.makeOpen(r.day) : (()=>{}) })),
+    }));
+    const searchHints=['Lisbon','the studio','my sister','afraid to begin','the typeface','Kyoto'].map(t=>({text:t, key:t, pick:this.makeHint(t)}));
+
+    // entry
+    const entry = st.entryOpen ? this._buildEntry(this._entryDay) : {paras:[]};
+
+    // counts
+    const c=this._counts||{pages:24,streak:18,ideas:42,moments:3};
+
+    const marginOn = st.focus?0.25:1;
+    const wide = (st.winW||1440) >= 1160;
+    const maxW = wide ? 1300 : 720;
+    const cols = wide ? 'minmax(0,1fr) 640px minmax(0,1fr)' : 'minmax(0,720px)';
+    const todayContainerStyle = `max-width:${maxW}px; margin:0 auto; padding:0 ${wide?48:40}px; display:grid; grid-template-columns:${cols}; justify-content:center; gap:0; min-height:100%;`;
+    const asideBase = 'display:flex; flex-direction:column; gap:34px;';
+    const leftAsideStyle = wide ? `padding:130px 34px 60px 0; ${asideBase} opacity:${marginOn}; transition:opacity 700ms ease;` : 'display:none;';
+    const rightAsideStyle = wide ? `padding:130px 0 60px 34px; ${asideBase} opacity:${marginOn}; transition:opacity 700ms ease;` : 'display:none;';
+
+    return {
+      // nav
+      goToday:this.goToday, goLife:this.goLife, goInsights:this.goInsights, goSearch:this.goSearch,
+      navTodayStyle:this._navStyle(view==='today'),
+      navLifeStyle:this._navStyle(view==='life'),
+      navInsightsStyle:this._navStyle(view==='insights'),
+      isToday:view==='today', isLife:view==='life', isInsights:view==='insights', isSearch:view==='search',
+      todayContainerStyle, leftAsideStyle, rightAsideStyle, isNarrow:!wide,
+
+      // today
+      today:{
+        weekday:'Tuesday', dateLong:'July 21', moodColor:this.MOODS.warm.color, moodLabel:'warm',
+        place:'The studio', weather:'19°, clear',
+        body:st.body,
+        bodyTail:'By noon the light comes through the west window and lands on the far wall in a long gold rectangle. I have started calling it the four o\u2019clock and planning small tasks around it, as if the light were a colleague with opinions.',
+        photoCaption:'The four o\u2019clock, west wall',
+      },
+      bodyRef:this.bodyRef, onBody:this.onBody, onWriteFocus:this.onWriteFocus, onWriteBlur:this.onWriteBlur,
+      marginOpacity:marginOn, cursorOpacity:st.focus?0:0.7,
+      todayEchoes:[
+        {text:'A year ago this week you wrote that you were afraid to begin.', when:'July 2025', delay:'900ms', key:'e1'},
+        {text:'This reminds me of the first morning in the Lisbon apartment — the same standing-still.', when:'two weeks ago', delay:'1500ms', key:'e2'},
+      ],
+      observation:st.observation,
+      reflectAgain:this.reflectAgain,
+      reflectLabel: st.reflecting?'listening…':'listen again',
+      reflectingDot: st.reflecting?1:0,
+      todayMeta:[
+        {label:'Words today', value:'214', key:'m1'},
+        {label:'Writing streak', value:'18 days', key:'m2'},
+        {label:'On this day', value:'2 past entries', key:'m3'},
+      ],
+
+      // life
+      life:{ month:monthName, year:y, season:seasonOf(mo), caption:isJuly?'A month that opened somewhere else and came home changed.':'The shape of these weeks, remembered.', blanks:Array.from({length:lead},(_,i)=>({key:'bl'+i})), days },
+      weekdays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+      prevMonth:this.prevMonth, nextMonth:this.nextMonth,
+      lifeLegend:[
+        {label:'Photographed', mark:'display:inline-block;width:8px;height:8px;background:var(--ink-3);border-radius:1px;', key:'l1'},
+        {label:'Travel', mark:'display:inline-block;width:9px;height:9px;border:1.4px solid var(--ink-3);border-radius:50%;', key:'l2'},
+        {label:'Reading', mark:'display:inline-block;width:3px;height:10px;background:var(--ink-3);border-radius:1px;', key:'l3'},
+        {label:'Voice note', mark:'display:inline-block;width:6px;height:6px;background:var(--accent-soft);border-radius:50%;', key:'l4'},
+        {label:'Milestone', mark:'display:inline-block;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);', key:'l5'},
+      ],
+
+      // insights (June 2026 chapter)
+      ins:{
+        kicker:'Early summer · 2026', month:'June',
+        themeQuote:'A month of gathering myself before something began.',
+        stats:[
+          {value:c.pages, label:'journal pages', key:'s1'},
+          {value:c.streak, label:'day streak', key:'s2'},
+          {value:c.ideas, label:'new ideas', key:'s3'},
+          {value:c.moments, label:'unforgettable', key:'s4'},
+        ],
+        dropcap:'J', 
+        intro:'une was quieter than it looked from the inside. You wrote most mornings, usually before the coffee had cooled, and the entries grew shorter and surer as the weeks went on — the sentences of someone who has stopped explaining themselves to the page and started simply telling it things.',
+        sections:[
+          {label:'The writing', pull:'You wrote less, and meant more.', body:'Twenty-four pages across eighteen days. The long, searching entries of spring gave way to something more like breath — three lines here, a whole afternoon there. Reflect noticed you wrote your steadiest streak of the year, and that your mornings became the hour you trusted most.', key:'w'},
+          {label:'An idea that would not leave', body:'The studio idea, which had lived in the margins for the better part of two years, moved to the centre of the page in June. It stopped being a someday and became a set of small, boring, thrilling decisions — a lease, a name, a colour for a wall.', pull:false, key:'i'},
+          {label:'Reading', body:'You finished two books and abandoned one without guilt. The one about coastlines stayed with you longest; you copied a line about drawing what you cannot see into three separate entries, each time as if it were new.', hasImage:true, imageCaption:'the reading corner, late June', key:'b'},
+          {label:'The people', pull:'The conversations got harder and better.', body:'A dinner with your sister turned, unexpectedly, toward your mother. Theo appears in the margins of nearly every entry this month — rarely named, always there, usually holding a camera.', key:'r'},
+          {label:'Mood', body:'Reflect gently observed that June felt calmer than the previous three months. The anxious undertone that ran through spring thinned out around the middle of the month and, by the end, was mostly gone. Something had been decided, even before you decided it.', key:'mo'},
+        ],
+        closing:'You spent June getting ready without knowing it. Reading this back, the whole month looks like a held breath — and July is where you finally let it go.',
+      },
+
+      // search
+      query:st.query, onQuery:this.onQuery, searchRef:(el)=>{this._searchEl=el;}, closeSearch:this.closeSearch,
+      searchLead:st.searchLead, searchGroups, searchEmpty: q.trim().length<1, searchHints,
+
+      // entry morph
+      entryOpen:st.entryOpen, entry, entryContentOpacity: st.entryVisible?1:0,
+      entryRef:this.entryRef, scrimRef:this.scrimRef, entryScrollRef:this.entryScrollRef, closeEntry:this.closeEntry,
+    };
+  }
+
+  _proc(y,mo,n){
+    // deterministic procedural footprint for months other than July, so the map feels lived-in
+    const seed=(y*37+mo*17+n*13)%100;
+    if(seed<34) return null;
+    const moods=['bright','warm','calm','low'];
+    return { mood:moods[seed%4], density:1+(seed%3), photo:seed%5===0, travel:seed%11===0, book:seed%7===0, voice:seed%6===0, milestone:seed%23===0 };
+  }
+}
+</script>
+</body>
+</html>

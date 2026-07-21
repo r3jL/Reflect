@@ -70,7 +70,7 @@ Pin the **major** versions below; agent should resolve latest compatible minor/p
 - Vector search: **`sqlite-vec`** (`vec0` virtual tables). ⚠️ macOS's system SQLite disables loadable extensions, so the app must bundle its own SQLite: use GRDB's custom-SQLite build and compile `sqlite-vec`'s C amalgamation into the app, registering it via `sqlite3_auto_extension`. **This build setup is a week-1 de-risk task.**
 
 ### 3.3 UI layer
-- **SwiftUI** throughout; `@Observable` models; `NavigationSplitView` with sidebar (Today / Life / Insights, per the design).
+- **SwiftUI** throughout; `@Observable` models. **No sidebar / no `NavigationSplitView`** — the design (§3.6) uses a single thin top bar with inline nav (Today / Life / Insights) and view switching within one window; the entry view opens via a `matchedGeometryEffect` morph from its calendar cell.
 - **Entry editor:** wrapped **`NSTextView`** via `NSViewRepresentable` — SwiftUI's `TextEditor` is not capable enough. `entries.body` persisted as plain Markdown text; live styling (headings, emphasis) applied through `NSTextStorage` attributes. Candidate base library: **STTextView**. **Highest-risk component — prototype before all other UI.**
 - Charts (mood timeline): **Swift Charts** (native).
 - Icons: **Lucide** (bundled as template images), per the design system.
@@ -91,38 +91,60 @@ All via one **OpenRouter** OpenAI-compatible endpoint in v1, behind a provider a
 - Video poster frame + duration: **AVFoundation** (`AVAssetImageGenerator`, `AVAsset`) — **no ffmpeg dependency**.
 - Attach via SwiftUI `PhotosPicker` and `fileImporter`; media files stored on disk in the app data directory; DB stores relative paths only.
 
-### 3.6 Design direction — "Classical" design system
-The visual design is fixed by the Classical design package (delivered 2026-07-21; tokenized CSS + full-page mockups + screenshots are the reference). Character: **editorial and book-like** — a quiet near-white page, serif type, hairline rules, color applied as stroke rather than fill, photographs matted like tipped-in book plates.
+### 3.6 Design direction — "Living Memory" system
+> **Supersedes the "Classical" direction (2026-07-21 — see DEC-07).** Classical is archived under `design/archive/`. The authoritative reference is the Living Memory mockup (`design/living-memory/Reflect.dc.html`) — a working interactive prototype whose markup/CSS/logic encode the exact tokens, layouts, and motion.
 
-**Tokens (implement as a Swift `Theme`; never hard-code values in views):**
+Character: **quiet, warm, alive**. A paper-toned writing room where the AI layer appears as **marginalia** — italic serif whispers in the page margins, never panels or chrome. No sidebar; a thin top bar carries the whole app. Motion is meaningful, not decorative: content rises in, echoes blur in like recollection, photos "develop", entries morph open from their calendar cells.
 
-| Token | Value |
+**Tokens (source of truth is OKLCH; implement as a Swift `Theme` with exact conversions — hex below are ≈ approximations for orientation only):**
+
+| Token | OKLCH | ≈ Hex |
+|---|---|---|
+| paper (page) | `0.974 0.006 84` | `#F8F6F1` |
+| paper-2 | `0.958 0.008 84` | `#F3F0EA` |
+| paper-3 | `0.930 0.010 82` | `#EAE6DE` |
+| paper-4 (window ground) | `0.905 0.012 80` | `#E3DDD3` |
+| ink | `0.30 0.014 55` | `#3C342D` |
+| ink-2 | `0.46 0.012 55` | `#645C54` |
+| ink-3 | `0.62 0.010 58` | `#8D857C` |
+| ink-4 (faint) | `0.745 0.008 62` | `#AFA9A0` |
+| hair / hair-2 (rules) | `0.885 0.010 78` / `0.835 0.012 76` | `#DED8CD` / `#CFC8BC` |
+| accent (terracotta) | `0.56 0.088 52` | `#A56B45` |
+| accent-soft | `0.70 0.055 54` | `#C39B7E` |
+
+**Mood system (4 moods — dot color + 15% wash for calendar cells):**
+
+| Mood | OKLCH dot |
 |---|---|
-| Background | `#F3F2F2` |
-| Surface | `#EAE9E9` |
-| Text (ink) | `#201F1D` |
-| Accent (single accent; mono scheme) | `#B68235` |
-| Divider | ink @ 16% opacity (hairlines) |
-| Neutral ramp 100–900 | `#F8F4F4 #EAE7E7 #D7D3D3 #BAB6B6 #9B9797 #7D7979 #605D5D #444141 #2D2B2B` |
-| Accent ramp 100–900 | `#FFF3E4 #FFE3BF #FACB8D #E1AD66 #C28D41 #A06F24 #7D5411 #5A3B0A #3A270D` |
-| Heading font | **Cormorant Garamond** — semibold ceiling; display sizes take the regular cut |
-| Body font | **Lora** regular — tabular numerals (`tnum`) wherever numbers stand as figures |
-| Type scale | h1–h6: 42 / 32 / 25 / 20 / 16 / 13; body 15pt, line-height 1.55 |
-| Spacing scale | 4.6 / 9.2 / 13.8 / 18.4 / 27.6 / 36.8 pt |
-| Radii | 2 / 4 / 7 pt |
-| Shadows | soft ink-tinted, "a whisper" (sm/md/lg) |
+| `bright` (warm gold) | `0.74 0.10 82` |
+| `warm` (terracotta) | `0.64 0.10 45` |
+| `calm` (sage green) | `0.66 0.06 155` |
+| `quiet` (blue-grey) | `0.60 0.045 250` |
 
-**Rules (from the DS guide):**
-- Draw with **borders, rules, underlines** — never solid accent fills. Buttons are **outlined** (1px accent border on transparent), cards are **bordered and unfilled**, kickers are small caps in accent.
-- Photographs get the **plate treatment**: warm archival grade (sepia 0.22, saturation 0.82, contrast 1.05) inside a 6pt surface-colored mat with a hairline outline.
-- Hover/pressed states tint from the accent ramp; keyboard focus is a 2pt accent ring. Accent-on-ground contrast is ~3:1 — fine for chrome and large text; use accent-700 for body-size accent text.
-- Both fonts are OFL-licensed (Google Fonts) — **bundle them in the app**.
-- Light theme is the default; the design includes a theme toggle — a dark variant may follow but is **not** MVP.
+This replaces the earlier 5-label mood vocabulary; `entry_reflection.mood_label` takes these four values (§4 updated).
 
-**Key screens (from the mockups):**
-- **Sidebar:** brand, search field (⌘F), nav (Today / Life / Insights), theme toggle, profile row with journaling streak.
-- **Life (month view):** calendar grid of entry cells; month header with season kicker ("SUMMER · 2025"), display-size month name, italic month summary line, and pages/photos/trips stat numerals; right rail with THIS MONTH stats and BOOKMARKS list.
-- **Day/entry view:** weekday kicker, display-size date, mood chip ("● Felt Awe"), time-of-day section dividers ("— Dawn —"), justified body text, matted photos, entity/place tags, prev/next day arrows.
+**Type:**
+- **Journal voice — Newsreader** (variable: optical sizing, weights 300–500, italics; OFL — bundle it). All writing, dates, display numerals, and every word the AI says (always *italic*).
+- **UI voice — system sans (SF Pro)** for chrome: nav, kickers (10–11pt, letterspaced 0.16–0.28em uppercase), labels, chips. **SF Mono** for tiny annotations like `[ photo ]`.
+- Display sizes: 56pt (Today date), 88pt (Life month), 118pt (Insights month) — weight **300** at display sizes; body text 21–22pt serif at 1.72–1.74 line-height. No bold anywhere.
+
+**Structure & key screens:**
+- **Top bar (46pt, no sidebar):** traffic lights · "Reflect" serif wordmark · inline nav **Today / Life / Insights** · spacer · **"Remember"** search button (⌘K).
+- **Today (the writing room):** centered 640pt column; letterspaced weekday kicker, 56pt serif date, meta row (mood dot · place · weather). Body is a bare serif text area — no toolbar, blinking accent caret. Photos sit inline in the flow with `[ photo ]` captions. **Left margin: Memory echoes** (1–2 related past moments — italic serif + breathing accent dot + "when" line). **Right margin: "Reflect noticed"** (one-sentence AI observation, regenerates ~1.8s after typing pauses with a "listening…" state) + small metadata stack (words today / writing streak / on this day). **Focus behavior: margins fade to 25% opacity while writing**, return on pause. Narrow windows collapse margins into an inline section below the entry.
+- **Life (month map):** season kicker, 88pt month name, italic month caption; 7-col calendar of square cells — mood-wash background, mood-colored density bars (1–3 by entry length), milestone diamond (accent), and glyphs for photo/travel/book/voice; hover lifts the cell; legend row below; ‹ › + arrow keys navigate months.
+- **Insights (the monthly chapter):** a magazine essay per month — kicker, 118pt month, italic theme quote, count-up stat row (pages / streak / ideas / unforgettable), drop-cap intro, titled sections with pull-quotes and photos, and a "Closing reflection" card on paper-2.
+- **Remember (⌘K):** full-screen blurred overlay; giant serif prompt "What are you trying to remember?"; a warm AI lead sentence frames the results; results grouped by facet (**People / Places / Projects / Books / Feelings / Ideas / Travel / Time**) as date + serif snippet; suggestion chips when empty.
+- **Entry view:** opens by **morphing from its calendar cell** (≈660ms spring-like ease, scrim behind, ESC closes back into the cell). Serif date header, paragraphs, inline photos, and a left-bordered "Memory echo" block at the end.
+
+**Motion vocabulary (SwiftUI: `matchedGeometryEffect` for the morph; honor Reduce Motion):**
+rise (14pt up + fade, ~900ms) · echo (blur-in, ~1.2s, staggered) · sharpen (photo develop: blur+desaturate → clear, ~1.4s) · caret blink (1.15s) · breathing dots (4s) · cell-morph open/close · stat count-ups (~1.1s ease-out).
+
+**Design-driven deltas to other sections (applied in this revision):**
+- `entries` gains optional `place`, `weather` and a user-set `is_milestone` flag (§4, FR-015).
+- Day-cell glyphs derive from existing data: photo/voice from `media`/STT use, book/travel from extracted entities, density from `word_count`.
+- **Memory echoes** = top-k embedding retrieval over past entries (Phase 1 embeddings make this MVP-feasible); "Reflect noticed" maps to the Reflection stage's entry-local `reflection_note`; the Remember lead sentence is a small Reflection-stage call.
+- The **Insights monthly chapter is Phase 4** (hierarchical summaries). MVP renders the view with locally computed stats + a quiet "your chapter arrives at month's end" placeholder.
+- Mood-over-time (FR-026) is expressed through Life's mood washes and the Insights mood section rather than a standalone chart.
 
 ---
 
@@ -142,6 +164,9 @@ CREATE TABLE entries (
     status       TEXT NOT NULL DEFAULT 'draft'
                  CHECK (status IN ('draft','completed')),
     word_count   INTEGER NOT NULL DEFAULT 0,
+    place        TEXT,                                  -- optional context (design §3.6)
+    weather      TEXT,                                  -- optional context (design §3.6)
+    is_milestone INTEGER NOT NULL DEFAULT 0,            -- user-set milestone (Life diamond)
     is_deleted   INTEGER NOT NULL DEFAULT 0,            -- soft delete (trash)
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL,
@@ -210,7 +235,7 @@ CREATE INDEX idx_jobs_status ON pipeline_jobs(status);
 CREATE TABLE entry_reflection (
     entry_id        TEXT PRIMARY KEY REFERENCES entries(id) ON DELETE CASCADE,
     summary         TEXT,
-    mood_label      TEXT,        -- e.g. down|low|neutral|good|great
+    mood_label      TEXT,        -- bright|warm|calm|quiet (design §3.6 mood system)
     mood_confidence REAL,        -- 0.0–1.0
     sentiment_score REAL,        -- -1.0–1.0
     energy          TEXT,        -- low|medium|high
@@ -326,6 +351,7 @@ CREATE VIRTUAL TABLE vec_entries USING vec0(
 - **FR-012** Full offline operation for all FR-001…FR-011.
 - **FR-013** Settings: enable/disable AI, set OpenRouter API key (→ Keychain), choose per-stage models and STT model.
 - **FR-014** Optional app lock (Touch ID) gating app open. *(Config: `security.app_lock`.)*
+- **FR-015** Optional per-entry context: `place` and `weather` fields, and a user-set **milestone** flag (rendered as the accent diamond in the Life view).
 
 ### 5.2 Phase 1 — Extraction & Reflection (AI enrichment)
 - **FR-020** Async pipeline orchestrator: a durable job queue driving stages **Extraction → Reflection → (Memory: P3)**, with **Embedding** running in parallel. Per-stage `status`, bounded retries with backoff, offline-aware (runs when provider reachable).
@@ -404,15 +430,17 @@ Reflect/
 ├─ Reflect/                        # app target (SwiftUI, macOS)
 │  ├─ ReflectApp.swift             # @main; DB + orchestrator bootstrap
 │  ├─ Features/
-│  │  ├─ Timeline/                 # Today + reverse-chron browse, date jump
-│  │  ├─ Life/                     # month calendar view (per design)
-│  │  ├─ Entry/                    # read view, metadata panels, media gallery
+│  │  ├─ Shell/                    # top bar (nav, Remember button), view switching
+│  │  ├─ Today/                    # writing room: date header, editor, margin
+│  │  │                            #   marginalia (echoes, Reflect noticed, meta)
+│  │  ├─ Life/                     # month map: mood-wash cells, glyphs, legend
+│  │  ├─ Entry/                    # morph-open read view (matchedGeometryEffect)
 │  │  ├─ Editor/                   # NSTextView wrapper + voice button
-│  │  ├─ Insights/                 # mood timeline (Swift Charts), theme/entity
-│  │  │                            #   browse, action items
+│  │  ├─ Insights/                 # monthly chapter (stats now; essay = Phase 4);
+│  │  │                            #   theme/entity browse, action items
+│  │  ├─ Remember/                 # ⌘K overlay: faceted search + AI lead line
 │  │  ├─ Settings/                 # AI config, models, app lock
-│  │  ├─ Trash/
-│  │  └─ Search/                   # FTS5 keyword search (⌘F)
+│  │  └─ Trash/
 │  ├─ DesignSystem/                # Classical theme: Color+Theme, Typography,
 │  │                               #   Spacing, components (buttons, cards,
 │  │                               #   tags, plate image style)
@@ -436,8 +464,9 @@ Reflect/
 │  │                               #   embedding stages
 │  ├─ ReflectSTT/                  # whisper.cpp SwiftPM wrapper, model mgmt
 │  └─ ReflectMedia/                # ImageIO thumbnails, AVFoundation posters
-├─ design/                         # Classical design package (tokens CSS,
-│                                  #   mockups, screenshots) — reference only
+├─ design/
+│  ├─ living-memory/               # AUTHORITATIVE: Living Memory mockup
+│  └─ archive/                     # superseded Classical package
 └─ README.md
 ```
 
@@ -472,6 +501,7 @@ Explicitly **out of scope** for MVP, to prevent over-engineering:
 - **DEC-04 — Reflection model pin.** Default to the latest Claude Sonnet (4.6) rather than pinning the 4.0 snapshot. *(Confirm.)*
 - **DEC-05 — DB-at-rest encryption.** v1 relies on macOS FileVault + optional Touch ID app lock (FR-014). SQLCipher whole-DB encryption is available as an add-on but not enabled by default. *(Confirm, or require SQLCipher in v1.)*
 - **DEC-06 — Application stack. ✅ Decided (2026-07-21):** native **Swift/SwiftUI** replaces the original Tauri v2 (Rust + React) plan. Drivers: native writing feel, macOS/iOS system integration (Touch ID, Shortcuts, widgets, share extension, Journaling Suggestions API on iOS), and a shared-code path to a future iOS app. Consequences: GRDB replaces `rusqlite`; AVFoundation replaces ffmpeg; Swift Charts replaces Recharts; Swift Concurrency actor replaces the Rust queue; the Classical design tokens are re-expressed as a Swift theme (§3.6). Schema (§4), functional modules (§5), flows (§6), and acceptance criteria (§7) are unchanged.
+- **DEC-07 — Design direction. ✅ Decided (2026-07-21):** the **"Living Memory" system** (§3.6) replaces the Classical direction adopted earlier the same day. Key shifts: sidebar → thin top bar; Cormorant Garamond/Lora → Newsreader + system sans; static editorial pages → animated, marginalia-driven surfaces (memory echoes, "Reflect noticed", cell-morph entry, Remember overlay); 5-label mood enum → 4-mood color system (bright/warm/calm/quiet); `entries` gains `place`/`weather`/`is_milestone` (FR-015). Classical package archived under `design/archive/`.
 
 ---
 
