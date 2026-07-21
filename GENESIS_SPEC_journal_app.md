@@ -3,7 +3,8 @@
 > **Status:** MVP-ready spec for AI coding agent initialization.
 > **MVP scope:** Phase 0 (Journal Core) + Phase 1 (Extraction & Reflection).
 > **Owner:** Jatin Chaudhary
-> **Last updated:** 2026-07-09
+> **Stack:** Native **Swift/SwiftUI** (revised 2026-07-21 from Tauri v2 — see DEC-06).
+> **Last updated:** 2026-07-21
 
 This document is the single source of truth for building v1. Sections 1–9 are authoritative. Two open items are marked `[NEEDS CLARIFICATION]` and must not be built until resolved.
 
@@ -54,36 +55,74 @@ All targets are for MVP (Phase 0 + 1) on a target machine: Apple Silicon Mac, �
 
 ## 3. Foundational Tech Stack
 
+> **Revision note (2026-07-21):** v1 is a **native Swift app**, replacing the earlier Tauri v2 (Rust + web) plan. Drivers: best-in-class writing feel (native text editing), the OS integration Apple's Journal app competes on (Touch ID, Shortcuts, widgets, share extension, Journaling Suggestions API on iOS), and a first-class future iOS path via shared SwiftUI/core code. See DEC-06.
+
 Pin the **major** versions below; agent should resolve latest compatible minor/patch at init.
 
 ### 3.1 Application shell
-- **Tauri v2** (Rust core + web frontend). Rationale: native macOS app (~small footprint), filesystem + SQLite access, web UI.
-- **Rust** (edition 2021) for the core.
+- **Swift 5.10+** (adopt Swift 6 language mode where practical), **SwiftUI** app lifecycle, **AppKit interop** where SwiftUI is insufficient (notably the entry editor).
+- Deployment target: **macOS 14 (Sonoma)+**, Apple Silicon.
+- Structure: one Xcode app target + local **SwiftPM packages** for the core (see §8), keeping domain logic UI-independent and directly reusable by a future iOS target.
 
 ### 3.2 Data layer
-- **SQLite** via **`rusqlite`** (bundled SQLite) in the Rust core — **NOT** Tauri's default `sql` plugin (that plugin is `sqlx`-based and does not load loadable extensions cleanly).
-- Vector search: **`sqlite-vec`** (`vec0` virtual tables), loaded via `sqlite3_auto_extension` in the `rusqlite` connection.
-- Keyword search: **SQLite FTS5**.
-- WAL journal mode; foreign keys enabled.
+- **SQLite** via **GRDB** (Swift). WAL journal mode; foreign keys enabled; numbered migrations via GRDB's `DatabaseMigrator`.
+- Keyword search: **SQLite FTS5** (first-class in GRDB).
+- Vector search: **`sqlite-vec`** (`vec0` virtual tables). ⚠️ macOS's system SQLite disables loadable extensions, so the app must bundle its own SQLite: use GRDB's custom-SQLite build and compile `sqlite-vec`'s C amalgamation into the app, registering it via `sqlite3_auto_extension`. **This build setup is a week-1 de-risk task.**
 
-### 3.3 Frontend
-- **React 18** + **TypeScript 5.x**, built with **Vite**.
-- State: **Zustand** (lightweight; no Redux).
-- Editor: **TipTap** (ProseMirror) for the entry editor — stores content as Markdown/HTML; entry `body` persisted as Markdown text. *(Open decision — see §10; plain Markdown+CodeMirror is the fallback.)*
-- Charts (mood timeline): **Recharts** (or Chart.js — either acceptable).
-- Styling: Tailwind (utility-first), light theme default.
+### 3.3 UI layer
+- **SwiftUI** throughout; `@Observable` models; `NavigationSplitView` with sidebar (Today / Life / Insights, per the design).
+- **Entry editor:** wrapped **`NSTextView`** via `NSViewRepresentable` — SwiftUI's `TextEditor` is not capable enough. `entries.body` persisted as plain Markdown text; live styling (headings, emphasis) applied through `NSTextStorage` attributes. Candidate base library: **STTextView**. **Highest-risk component — prototype before all other UI.**
+- Charts (mood timeline): **Swift Charts** (native).
+- Icons: **Lucide** (bundled as template images), per the design system.
+- Styling: the **Classical design system** (§3.6) expressed as a Swift theme layer — the tokens are the single source of truth; no hard-coded colors/sizes in views.
 
 ### 3.4 AI layer
-All via one **OpenRouter** OpenAI-compatible endpoint in v1, behind a provider abstraction (`AiProvider` trait):
+All via one **OpenRouter** OpenAI-compatible endpoint in v1, behind a provider abstraction (`AiProvider` **protocol**):
 - **Extraction stage** model: `google/gemini-2.5-flash` (~$0.30 in / $2.50 out per 1M tokens).
 - **Reflection stage** model: latest Claude Sonnet (`anthropic/claude-sonnet-4.6`; ~$3 in / $15 out per 1M).
 - **Embeddings:** `bge-m3` at **1024 dimensions** — chosen because it is available *both* via OpenRouter and locally (Ollama/ONNX), so the future API↔local toggle uses the same model and vector space with no re-index.
-- **Speech-to-text:** **self-hosted `whisper.cpp`** (default model `large-v3-turbo`, configurable to a smaller model). Audio never leaves the device.
-- **API keys:** stored in **macOS Keychain**, referenced (never persisted) in the DB.
+- **Speech-to-text:** **self-hosted `whisper.cpp`** via its **SwiftPM package** (default model `large-v3-turbo`, configurable to a smaller model). Audio never leaves the device.
+- Networking: `URLSession` + `Codable`; structured-JSON outputs validated against per-stage schemas.
+- **API keys:** stored via **Keychain Services** (macOS Keychain), referenced (never persisted) in the DB.
+- Pipeline orchestrator: Swift Concurrency (`actor`-based runner) driving the durable `pipeline_jobs` table.
 
 ### 3.5 Media
-- Thumbnails: Rust `image` crate (photos); **ffmpeg** dependency for extracting a video poster frame.
-- Media files stored on disk in the app data directory; DB stores relative paths only.
+- Photo thumbnails: **ImageIO** (`CGImageSourceCreateThumbnailAtIndex`).
+- Video poster frame + duration: **AVFoundation** (`AVAssetImageGenerator`, `AVAsset`) — **no ffmpeg dependency**.
+- Attach via SwiftUI `PhotosPicker` and `fileImporter`; media files stored on disk in the app data directory; DB stores relative paths only.
+
+### 3.6 Design direction — "Classical" design system
+The visual design is fixed by the Classical design package (delivered 2026-07-21; tokenized CSS + full-page mockups + screenshots are the reference). Character: **editorial and book-like** — a quiet near-white page, serif type, hairline rules, color applied as stroke rather than fill, photographs matted like tipped-in book plates.
+
+**Tokens (implement as a Swift `Theme`; never hard-code values in views):**
+
+| Token | Value |
+|---|---|
+| Background | `#F3F2F2` |
+| Surface | `#EAE9E9` |
+| Text (ink) | `#201F1D` |
+| Accent (single accent; mono scheme) | `#B68235` |
+| Divider | ink @ 16% opacity (hairlines) |
+| Neutral ramp 100–900 | `#F8F4F4 #EAE7E7 #D7D3D3 #BAB6B6 #9B9797 #7D7979 #605D5D #444141 #2D2B2B` |
+| Accent ramp 100–900 | `#FFF3E4 #FFE3BF #FACB8D #E1AD66 #C28D41 #A06F24 #7D5411 #5A3B0A #3A270D` |
+| Heading font | **Cormorant Garamond** — semibold ceiling; display sizes take the regular cut |
+| Body font | **Lora** regular — tabular numerals (`tnum`) wherever numbers stand as figures |
+| Type scale | h1–h6: 42 / 32 / 25 / 20 / 16 / 13; body 15pt, line-height 1.55 |
+| Spacing scale | 4.6 / 9.2 / 13.8 / 18.4 / 27.6 / 36.8 pt |
+| Radii | 2 / 4 / 7 pt |
+| Shadows | soft ink-tinted, "a whisper" (sm/md/lg) |
+
+**Rules (from the DS guide):**
+- Draw with **borders, rules, underlines** — never solid accent fills. Buttons are **outlined** (1px accent border on transparent), cards are **bordered and unfilled**, kickers are small caps in accent.
+- Photographs get the **plate treatment**: warm archival grade (sepia 0.22, saturation 0.82, contrast 1.05) inside a 6pt surface-colored mat with a hairline outline.
+- Hover/pressed states tint from the accent ramp; keyboard focus is a 2pt accent ring. Accent-on-ground contrast is ~3:1 — fine for chrome and large text; use accent-700 for body-size accent text.
+- Both fonts are OFL-licensed (Google Fonts) — **bundle them in the app**.
+- Light theme is the default; the design includes a theme toggle — a dark variant may follow but is **not** MVP.
+
+**Key screens (from the mockups):**
+- **Sidebar:** brand, search field (⌘F), nav (Today / Life / Insights), theme toggle, profile row with journaling streak.
+- **Life (month view):** calendar grid of entry cells; month header with season kicker ("SUMMER · 2025"), display-size month name, italic month summary line, and pages/photos/trips stat numerals; right rail with THIS MONTH stats and BOOKMARKS list.
+- **Day/entry view:** weekday kicker, display-size date, mood chip ("● Felt Awe"), time-of-day section dividers ("— Dawn —"), justified body text, matted photos, entity/place tags, prev/next day arrows.
 
 ---
 
@@ -274,12 +313,12 @@ CREATE VIRTUAL TABLE vec_entries USING vec0(
 
 ### 5.1 Phase 0 — Journal Core (no AI)
 - **FR-001** Create a new entry in `draft` status.
-- **FR-002** Edit entry body (TipTap), autosaving the draft; entry `word_count` recomputed.
+- **FR-002** Edit entry body (native `NSTextView`-based editor), autosaving the draft; entry `word_count` recomputed.
 - **FR-003** Complete an entry (`draft → completed`), setting `completed_at` and **enqueuing** the AI pipeline (Phase 1). Completion works offline (jobs stay `pending`).
 - **FR-004** Edit a *completed* entry: allowed; on save, **re-enqueue** pipelines and **supersede** prior derived metadata (metadata rows replaced; the entry text is simply the user's new text — no AI versioning of the body).
 - **FR-005** Attach one or more photos to an entry (copy into app media dir; record in `media`).
 - **FR-006** Attach one or more videos to an entry.
-- **FR-007** Generate and display thumbnails for all media (poster frame for video via ffmpeg).
+- **FR-007** Generate and display thumbnails for all media (poster frame for video via AVFoundation).
 - **FR-008** View an entry: read view with rendered body + media gallery + derived metadata (once available).
 - **FR-009** Browse entries in a reverse-chronological timeline; jump by date.
 - **FR-010** Soft-delete an entry to Trash (`is_deleted=1`); restore; empty-trash performs hard delete + cascades media file removal.
@@ -360,63 +399,49 @@ CREATE VIRTUAL TABLE vec_entries USING vec0(
 ## 8. Proposed Directory Structure
 
 ```
-reflect/
-├─ src-tauri/                     # Rust core
-│  ├─ src/
-│  │  ├─ main.rs
-│  │  ├─ lib.rs
-│  │  ├─ db/
-│  │  │  ├─ mod.rs                # rusqlite connection, WAL, pragmas
-│  │  │  ├─ vec.rs                # sqlite-vec auto_extension init
-│  │  │  ├─ migrations/           # numbered .sql migrations
-│  │  │  └─ repo/                 # entries, media, metadata, embeddings repos
-│  │  ├─ commands/                # Tauri commands (thin, call repos/services)
-│  │  │  ├─ entries.rs
-│  │  │  ├─ media.rs
-│  │  │  ├─ search.rs
-│  │  │  ├─ ai.rs
-│  │  │  └─ settings.rs
-│  │  ├─ ai/
-│  │  │  ├─ mod.rs
-│  │  │  ├─ provider.rs           # AiProvider + LocalLlmProvider traits
-│  │  │  ├─ openrouter.rs         # OpenRouter adapter (chat + embeddings)
-│  │  │  ├─ prompts/              # extraction.md, reflection.md (+ schemas)
-│  │  │  └─ pipeline/
-│  │  │     ├─ mod.rs             # orchestrator
-│  │  │     ├─ extraction.rs
-│  │  │     ├─ reflection.rs
-│  │  │     └─ embedding.rs
-│  │  ├─ stt/
-│  │  │  └─ whisper.rs            # whisper.cpp binding
-│  │  ├─ media/
-│  │  │  └─ thumbnail.rs          # image crate + ffmpeg
-│  │  ├─ queue/
-│  │  │  └─ mod.rs                # durable job queue, retry/backoff
-│  │  └─ keychain.rs              # macOS Keychain access for API keys
-│  ├─ Cargo.toml
-│  └─ tauri.conf.json
-├─ src/                           # React frontend
-│  ├─ main.tsx
-│  ├─ App.tsx
-│  ├─ routes/                     # timeline, entry, reflect, settings, trash
-│  ├─ components/
-│  │  ├─ editor/                  # TipTap editor + voice button
-│  │  ├─ entry/                   # read view, metadata panels
-│  │  ├─ media/                   # gallery, thumbnails
-│  │  ├─ reflect/                 # mood timeline, theme/entity browse
-│  │  └─ settings/
-│  ├─ lib/
-│  │  ├─ api/                     # invoke() wrappers per command module
-│  │  ├─ hooks/
-│  │  └─ format/
-│  ├─ stores/                     # Zustand stores
-│  └─ styles/
-├─ types/                         # shared TS types mirroring Rust DTOs
-├─ package.json
-├─ tsconfig.json
-├─ vite.config.ts
+Reflect/
+├─ Reflect.xcodeproj
+├─ Reflect/                        # app target (SwiftUI, macOS)
+│  ├─ ReflectApp.swift             # @main; DB + orchestrator bootstrap
+│  ├─ Features/
+│  │  ├─ Timeline/                 # Today + reverse-chron browse, date jump
+│  │  ├─ Life/                     # month calendar view (per design)
+│  │  ├─ Entry/                    # read view, metadata panels, media gallery
+│  │  ├─ Editor/                   # NSTextView wrapper + voice button
+│  │  ├─ Insights/                 # mood timeline (Swift Charts), theme/entity
+│  │  │                            #   browse, action items
+│  │  ├─ Settings/                 # AI config, models, app lock
+│  │  ├─ Trash/
+│  │  └─ Search/                   # FTS5 keyword search (⌘F)
+│  ├─ DesignSystem/                # Classical theme: Color+Theme, Typography,
+│  │                               #   Spacing, components (buttons, cards,
+│  │                               #   tags, plate image style)
+│  ├─ Resources/                   # bundled fonts (Cormorant Garamond, Lora),
+│  │                               #   Lucide icons, Assets.xcassets
+│  └─ Support/                     # app lock (LocalAuthentication), misc
+├─ Packages/
+│  ├─ ReflectCore/                 # UI-independent domain core (SwiftPM)
+│  │  └─ Sources/ReflectCore/
+│  │     ├─ Database/              # GRDB setup, WAL/pragmas, sqlite-vec
+│  │     │                         #   registration, DatabaseMigrator migrations
+│  │     ├─ Models/                # Entry, Media, Reflection, Theme, Entity…
+│  │     ├─ Repositories/          # entries, media, metadata, embeddings, FTS
+│  │     └─ Queue/                 # durable job queue, retry/backoff (actor)
+│  ├─ ReflectAI/
+│  │  └─ Sources/ReflectAI/
+│  │     ├─ AiProvider.swift       # AiProvider + LocalLlmProvider protocols
+│  │     ├─ OpenRouterProvider.swift  # chat + embeddings adapter
+│  │     ├─ Prompts/               # extraction.md, reflection.md (+ JSON schemas)
+│  │     └─ Pipeline/              # orchestrator, extraction, reflection,
+│  │                               #   embedding stages
+│  ├─ ReflectSTT/                  # whisper.cpp SwiftPM wrapper, model mgmt
+│  └─ ReflectMedia/                # ImageIO thumbnails, AVFoundation posters
+├─ design/                         # Classical design package (tokens CSS,
+│                                  #   mockups, screenshots) — reference only
 └─ README.md
 ```
+
+Notes: `ReflectCore`/`ReflectAI`/`ReflectSTT`/`ReflectMedia` import no UI frameworks — a future iOS target consumes them unchanged. Keychain access lives in `ReflectAI` (key storage) via Keychain Services.
 
 ---
 
@@ -442,10 +467,11 @@ Explicitly **out of scope** for MVP, to prevent over-engineering:
 
 ### Defaults chosen by architect — veto if desired
 - **DEC-01 — Embedding migration worker timing.** Shipping versioning schema + documented migration in v1; **deferring the backfill worker** until a second embedding model is actually needed. *(Confirm defer, or build the worker in v1.)*
-- **DEC-02 — Entry editor.** TipTap (rich, Markdown-persisted). Fallback: plain Markdown + CodeMirror. *(Confirm TipTap.)*
+- **DEC-02 — Entry editor. ✅ Resolved (2026-07-21, with DEC-06):** wrapped `NSTextView` via `NSViewRepresentable`; `body` persisted as plain Markdown; live styling via `NSTextStorage` attributes; STTextView as candidate base. SwiftUI `TextEditor` rejected (insufficient). Prototype first — highest-risk component. *(Supersedes TipTap.)*
 - **DEC-03 — Whisper model.** Default `large-v3-turbo` (accuracy on Apple Silicon; ~larger download). Configurable to a smaller model for speed/size. *(Confirm default.)*
 - **DEC-04 — Reflection model pin.** Default to the latest Claude Sonnet (4.6) rather than pinning the 4.0 snapshot. *(Confirm.)*
 - **DEC-05 — DB-at-rest encryption.** v1 relies on macOS FileVault + optional Touch ID app lock (FR-014). SQLCipher whole-DB encryption is available as an add-on but not enabled by default. *(Confirm, or require SQLCipher in v1.)*
+- **DEC-06 — Application stack. ✅ Decided (2026-07-21):** native **Swift/SwiftUI** replaces the original Tauri v2 (Rust + React) plan. Drivers: native writing feel, macOS/iOS system integration (Touch ID, Shortcuts, widgets, share extension, Journaling Suggestions API on iOS), and a shared-code path to a future iOS app. Consequences: GRDB replaces `rusqlite`; AVFoundation replaces ffmpeg; Swift Charts replaces Recharts; Swift Concurrency actor replaces the Rust queue; the Classical design tokens are re-expressed as a Swift theme (§3.6). Schema (§4), functional modules (§5), flows (§6), and acceptance criteria (§7) are unchanged.
 
 ---
 

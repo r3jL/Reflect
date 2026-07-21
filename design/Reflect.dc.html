@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/classical-b392bcee-1cfe-460f-a2df-f5f571664925/styles.css">
+<script src="_ds/classical-b392bcee-1cfe-460f-a2df-f5f571664925/_ds_bundle.js"></script>
+<style>
+  :root{ --desk:#e7e5e2; }
+  [data-theme="dark"]{
+    --color-bg:#1b1917; --color-surface:#262320; --color-text:#ece6dc;
+    --color-divider: color-mix(in srgb, #ece6dc 15%, transparent);
+    --color-accent:#d8a44f; --desk:#0e0d0c;
+  }
+  @keyframes screenIn{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+  @keyframes riseIn{ from{opacity:0; transform:translateY(28px) scale(.985)} to{opacity:1; transform:none} }
+  @keyframes matIn{ from{opacity:0; transform:translateY(7px); filter:blur(5px)} to{opacity:1; transform:none; filter:blur(0)} }
+  @keyframes floatY{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes zoomIn{ from{opacity:0; transform:scale(.94)} to{opacity:1; transform:none} }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+  @keyframes bubbleIn{ from{opacity:0; transform:translateY(10px) scale(.96)} to{opacity:1; transform:none} }
+  @keyframes ritualIn{ from{opacity:0; transform:translateY(8px); filter:blur(3px)} to{opacity:1; transform:none; filter:blur(0)} }
+  @keyframes dividerIn{ from{opacity:0; transform:scaleX(.6)} to{opacity:1; transform:none} }
+  @keyframes eq{ 0%,100%{transform:scaleY(.35)} 50%{transform:scaleY(1)} }
+  @keyframes echoIn{ from{opacity:0; transform:translateX(-7px); filter:blur(4px)} to{opacity:1; transform:none; filter:blur(0)} }
+  @keyframes echoOut{ to{opacity:0; transform:translateX(7px); filter:blur(3px)} }
+  [data-echo]{ animation: echoIn .8s cubic-bezier(.22,.61,.36,1) both }
+  [data-echo][data-leaving="true"]{ animation: echoOut .42s ease forwards }
+  [data-screen]{ animation: screenIn .5s cubic-bezier(.22,.61,.36,1) both }
+  [data-rise]{ animation: riseIn linear both; animation-timeline: view(); animation-range: entry 0% cover 24% }
+  [data-noscroll]{ scrollbar-width:none }
+  [data-noscroll]::-webkit-scrollbar{ width:0; height:0 }
+  [data-ph]:empty::before{ content: attr(data-ph); color: color-mix(in srgb, var(--color-text) 32%, transparent) }
+  [data-mat]{ animation: matIn .6s ease both }
+  [data-zoom]{ animation: zoomIn .5s cubic-bezier(.22,.61,.36,1) both }
+  [data-ritual]{ animation: ritualIn .6s cubic-bezier(.22,.61,.36,1) both }
+  [data-session]{ animation: dividerIn .55s cubic-bezier(.22,.61,.36,1) both }
+  [data-reduce] *{ animation-duration:.001s !important }
+  a{ color:var(--color-accent); text-decoration:none } a:hover{ color:var(--color-accent-700) }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" data-reduce="{{ reduceAttr }}" style="min-height:100vh; background:var(--desk); display:flex; flex-direction:column; align-items:center; gap:20px; padding:36px 16px 44px; font-family:var(--font-body); transition:background .7s ease; color:var(--color-text)">
+
+  <div style="position:relative; width:390px; height:844px; border-radius:54px; background:#0c0b0a; padding:13px; box-shadow:0 44px 100px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.06); flex:none">
+    <div style="position:relative; width:100%; height:100%; border-radius:43px; overflow:hidden; background:var(--color-bg); color:var(--color-text); display:flex; flex-direction:column; transition:background .7s ease">
+
+      <!-- status bar -->
+      <div style="height:52px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:14px 30px 0; font-family:var(--font-heading); font-size:15px; letter-spacing:.02em">
+        <span style="font-variant-numeric:tabular-nums">9:41</span>
+        <div style="display:flex; align-items:center; gap:6px; opacity:.85">
+          <svg width="17" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4.5C3.5 2 6 1 8 1s4.5 1 7 3.5"/><path d="M3.5 7C5 5.7 6.5 5 8 5s3 .7 4.5 2"/><circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="15" height="7" rx="1.5" fill="currentColor"/><path d="M24 4.5v4" stroke="currentColor" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <!-- scroll area -->
+      <div data-noscroll style="flex:1; overflow-y:auto; overflow-x:hidden">
+
+        <!-- ══════════ TODAY ══════════ -->
+        <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+        <div data-screen style="padding:8px 26px 130px">
+
+          <!-- direction 1: centered ritual -->
+          <sc-if value="{{ dir1 }}" hint-placeholder-val="{{ true }}">
+          <div style="text-align:center; padding:22px 4px 8px">
+            <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ dateLabel }}</div>
+            <h1 style="font-size:33px; margin:10px 0 4px; font-weight:400; letter-spacing:-.01em">{{ greeting }}</h1>
+            <div class="text-muted" style="font-size:13px">{{ weatherLine }}</div>
+            <div data-ritual key="{{ ritualKey }}" style="margin:30px auto 6px; max-width:290px">
+              <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 42%,transparent); font-family:var(--font-heading); margin-bottom:12px">{{ ritualKind }}</div>
+              <p style="font-family:var(--font-heading); font-size:24px; line-height:1.35; font-weight:400; font-style:{{ ritualStyle }}; text-wrap:pretty; margin:0">{{ ritualText }}</p>
+            </div>
+            <div style="display:flex; gap:7px; justify-content:center; margin-top:18px">
+              <sc-for list="{{ ritualDots }}" as="d" hint-placeholder-count="5"><span style="width:6px; height:6px; border-radius:50%; background:{{ d.bg }}"></span></sc-for>
+            </div>
+            <button onClick="{{ nextRitual }}" style="margin-top:16px; display:inline-flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--color-divider); border-radius:100px; padding:7px 15px; color:var(--color-text); font-family:var(--font-heading); font-size:13px; cursor:pointer" style-hover="border-color:var(--color-accent); color:var(--color-accent)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+              Another page
+            </button>
+          </div>
+          </sc-if>
+
+          <!-- direction 2: editorial masthead -->
+          <sc-if value="{{ dir2 }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:20px 0 6px">
+            <div style="display:flex; justify-content:space-between; align-items:baseline">
+              <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ greeting }}</div>
+              <div class="text-muted" style="font-size:12px">{{ weatherLine }}</div>
+            </div>
+            <h1 style="font-size:64px; line-height:.9; margin:14px 0 2px; font-weight:400; letter-spacing:-.02em">{{ mastheadDay }}</h1>
+            <div style="font-family:var(--font-heading); font-size:22px; color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ mastheadRest }}</div>
+            <hr class="hr" style="margin:22px 0 16px">
+            <div data-ritual key="{{ ritualKey }}" style="display:flex; gap:14px; align-items:flex-start">
+              <div style="width:2px; align-self:stretch; background:var(--color-accent); flex:none; margin-top:3px"></div>
+              <div>
+                <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 42%,transparent); font-family:var(--font-heading); margin-bottom:7px">{{ ritualKind }}</div>
+                <p style="font-family:var(--font-heading); font-size:21px; line-height:1.35; font-weight:400; font-style:{{ ritualStyle }}; margin:0; text-wrap:pretty">{{ ritualText }}</p>
+                <button onClick="{{ nextRitual }}" style="margin-top:12px; background:transparent; border:none; color:var(--color-accent); font-family:var(--font-heading); font-size:13px; cursor:pointer; padding:0; display:inline-flex; gap:6px; align-items:center">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                  Another
+                </button>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- direction 3: quiet -->
+          <sc-if value="{{ dir3 }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:22px 0 4px">
+            <div style="display:flex; justify-content:space-between; align-items:baseline">
+              <h1 style="font-size:26px; font-weight:400; margin:0">Today</h1>
+              <div class="text-muted" style="font-size:12px">{{ dateLabel }}</div>
+            </div>
+            <p data-ritual key="{{ ritualKey }}" class="text-muted" style="font-family:var(--font-heading); font-size:16px; font-style:italic; margin:14px 0 0; text-wrap:pretty">{{ ritualText }}</p>
+          </div>
+          </sc-if>
+
+          <!-- ══ today's living page — an illustrated story ══ -->
+          <div style="margin-top:26px; background:var(--color-bg); border-radius:14px; padding:24px 22px 30px; box-shadow:0 1px 0 color-mix(in srgb,var(--color-text) 6%,transparent), 0 18px 44px -30px color-mix(in srgb,var(--color-text) 60%,transparent); border:1px solid color-mix(in srgb,var(--color-text) 5%,transparent); position:relative">
+
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px">
+              <span style="font-family:var(--font-heading); font-size:13px; letter-spacing:.06em; color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ todayLong }}</span>
+              <span style="font-family:var(--font-heading); font-size:12px; color:color-mix(in srgb,var(--color-text) 40%,transparent)">{{ todayPlace }}</span>
+            </div>
+
+            <sc-for list="{{ todayBlocks }}" as="b" hint-placeholder-count="5">
+
+              <!-- timestamp divider -->
+              <sc-if value="{{ b.isTime }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="display:flex; align-items:center; gap:14px; margin:22px 0 13px">
+                <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+                <span style="font-family:var(--font-heading); font-size:12px; letter-spacing:.16em; color:color-mix(in srgb,var(--color-text) 46%,transparent); font-variant-numeric:tabular-nums">{{ b.time }}</span>
+                <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+              </div>
+              </sc-if>
+
+              <!-- paragraph -->
+              <sc-if value="{{ b.plainText }}" hint-placeholder-val="{{ true }}">
+              <p data-rise style="margin:6px 0 0; font-size:17px; line-height:1.85; text-wrap:pretty; color:color-mix(in srgb,var(--color-text) 88%,transparent)">{{ b.text }}</p>
+              </sc-if>
+
+              <!-- paragraph beside a person -->
+              <sc-if value="{{ b.hasPerson }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="display:flex; gap:12px; align-items:flex-start; margin:12px 0 0">
+                <span style="width:36px; height:36px; border-radius:50%; flex:none; border:1px solid var(--color-accent); background:var(--color-accent-100); display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-size:15px; color:var(--color-accent-800); margin-top:3px">{{ b.person }}</span>
+                <p style="margin:0; font-size:17px; line-height:1.85; text-wrap:pretty; color:color-mix(in srgb,var(--color-text) 88%,transparent)">{{ b.text }}</p>
+              </div>
+              </sc-if>
+
+              <!-- photos embedded into the page -->
+              <sc-if value="{{ b.isPhotos }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:18px">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Two photos</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+                  <div style="height:152px; border-radius:10px; overflow:hidden; border:5px solid var(--color-surface); outline:1px solid var(--color-divider)"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="today-photo-1" shape="rect" fit="cover" placeholder="Morning light" hint-size="100%,100%"></x-import></div>
+                  <div style="height:152px; border-radius:10px; overflow:hidden; border:5px solid var(--color-surface); outline:1px solid var(--color-divider)"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="today-photo-2" shape="rect" fit="cover" placeholder="The desk" hint-size="100%,100%"></x-import></div>
+                </div>
+              </div>
+              </sc-if>
+
+              <!-- place, printed into the notebook -->
+              <sc-if value="{{ b.isPlace }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:18px">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ b.place }}</span>
+                </div>
+                <div style="position:relative; height:134px; border-radius:10px; overflow:hidden; border:5px solid var(--color-surface); outline:1px solid var(--color-divider); filter:sepia(.16) saturate(.9)">
+                  <svg viewBox="0 0 320 134" preserveAspectRatio="xMidYMid slice" style="display:block; width:100%; height:134px; background:var(--color-accent-100)">
+                    <g stroke="color-mix(in srgb, var(--color-accent) 38%, transparent)" stroke-width="2" fill="none">
+                      <path d="M-5 34 H325"/><path d="M-5 74 H325"/><path d="M-5 108 H325"/>
+                      <path d="M56 -5 V139"/><path d="M132 -5 V139"/><path d="M214 -5 V139"/><path d="M280 -5 V139"/>
+                      <path d="M-5 12 L120 139"/>
+                    </g>
+                    <path d="M56 108 L56 74 L132 74 L132 34 L214 34" fill="none" stroke="var(--color-accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="214" cy="34" r="8" fill="none" stroke="var(--color-accent)" stroke-width="3"/>
+                    <circle cx="214" cy="34" r="3" fill="var(--color-accent)"/>
+                  </svg>
+                  <span style="position:absolute; bottom:8px; left:9px; background:var(--color-bg); border-radius:100px; padding:3px 11px; font-family:var(--font-heading); font-size:12px">{{ b.place }}</span>
+                </div>
+                <p style="margin:11px 0 0; font-size:17px; line-height:1.85; text-wrap:pretty; color:color-mix(in srgb,var(--color-text) 88%,transparent)">{{ b.note }}</p>
+              </div>
+              </sc-if>
+
+              <!-- music, quietly playing -->
+              <sc-if value="{{ b.isMusic }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:18px; display:flex; align-items:center; gap:13px; padding:13px 15px; border:1px solid var(--color-divider); border-radius:12px">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 15v-3a9 9 0 0 1 18 0v3"/><path d="M18 12h1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1z"/><path d="M6 12H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1z"/></svg>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Now playing</div>
+                  <div style="font-family:var(--font-heading); font-size:16px; margin-top:2px">{{ b.title }}</div>
+                  <div class="text-muted" style="font-size:12px">{{ b.artist }}</div>
+                </div>
+                <span style="display:inline-flex; gap:3px; align-items:flex-end; height:16px; flex:none">
+                  <span style="width:3px; height:100%; background:var(--color-accent); border-radius:2px; transform-origin:bottom; animation:eq 1.1s ease-in-out infinite"></span>
+                  <span style="width:3px; height:100%; background:var(--color-accent); border-radius:2px; transform-origin:bottom; animation:eq 1.1s ease-in-out .25s infinite"></span>
+                  <span style="width:3px; height:100%; background:var(--color-accent); border-radius:2px; transform-origin:bottom; animation:eq 1.1s ease-in-out .5s infinite"></span>
+                </span>
+              </div>
+              </sc-if>
+
+              <!-- voice note as a waveform strip -->
+              <sc-if value="{{ b.isVoice }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:16px; display:flex; align-items:center; gap:13px; padding:12px 15px; border:1px solid var(--color-divider); border-radius:12px">
+                <span style="width:34px; height:34px; border-radius:50%; flex:none; border:1px solid var(--color-accent); display:flex; align-items:center; justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-accent)"><path d="M8 5v14l11-7z"/></svg></span>
+                <div style="flex:1; min-width:0">
+                  <div style="display:flex; align-items:center; gap:2px; height:30px">
+                    <sc-for list="{{ b.bars }}" as="bar" hint-placeholder-count="20"><span style="flex:1; height:{{ bar.h }}; background:var(--color-accent); opacity:.5; border-radius:2px"></span></sc-for>
+                  </div>
+                  <div class="text-muted" style="font-size:12px; margin-top:5px">{{ b.label }}</div>
+                </div>
+                <span class="text-muted" style="font-size:12px; font-variant-numeric:tabular-nums; flex:none">{{ b.dur }}</span>
+              </div>
+              </sc-if>
+
+              <!-- book, inline -->
+              <sc-if value="{{ b.isBook }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:16px; display:flex; gap:14px; padding:14px; border:1px solid var(--color-divider); border-radius:12px">
+                <div style="width:46px; height:64px; flex:none; border-radius:3px; background:var(--color-accent-100); border-left:3px solid var(--color-accent); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" stroke-width="1.4"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                <div style="min-width:0">
+                  <div style="font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Reading</div>
+                  <div style="font-family:var(--font-heading); font-size:18px; line-height:1.2; margin:2px 0">{{ b.title }}</div>
+                  <div class="text-muted" style="font-size:12px; margin-bottom:6px">{{ b.author }}</div>
+                  <div style="font-family:var(--font-heading); font-style:italic; font-size:14px; line-height:1.4; color:color-mix(in srgb,var(--color-text) 78%,transparent)">{{ b.quote }}</div>
+                </div>
+              </div>
+              </sc-if>
+
+              <!-- AI reflection, woven in -->
+              <sc-if value="{{ b.isReflection }}" hint-placeholder-val="{{ false }}">
+              <div data-rise style="margin-top:22px">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:9px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                  <span style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Reflect noticed</span>
+                </div>
+                <p style="margin:0; font-family:var(--font-heading); font-style:italic; font-size:17px; line-height:1.5; color:color-mix(in srgb,var(--color-text) 86%,transparent); text-wrap:pretty">{{ b.text }}</p>
+              </div>
+              </sc-if>
+
+            </sc-for>
+
+            <!-- before bed — a gentle place to continue -->
+            <div data-rise style="margin-top:28px">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:9px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+                <span style="font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Before bed</span>
+              </div>
+              <p class="text-muted" style="font-family:var(--font-heading); font-style:italic; font-size:15px; margin:0">Anything you’d like to hold onto from today?</p>
+            </div>
+
+            <!-- new session divider, appears once you begin writing -->
+            <sc-if value="{{ sessionStarted }}" hint-placeholder-val="{{ false }}">
+            <div data-session style="display:flex; align-items:center; gap:14px; margin:20px 0 13px">
+              <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+              <span style="font-family:var(--font-heading); font-size:12px; letter-spacing:.16em; color:var(--color-accent); font-variant-numeric:tabular-nums">{{ sessionTime }}</span>
+              <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+            </div>
+            </sc-if>
+
+            <!-- the cursor resumes here -->
+            <div contenteditable="true" data-ph="Add tonight’s moment…" onInput="{{ onWrite }}" style="margin-top:14px; font-family:var(--font-body); font-size:17px; line-height:1.85; outline:none; min-height:96px; caret-color:var(--color-accent)"></div>
+
+            <!-- Memory Echoes — margin notes that quietly materialize as you write -->
+            <sc-if value="{{ hasEchoes }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:22px; display:flex; flex-direction:column; gap:18px">
+              <sc-for list="{{ echoes }}" as="e" hint-placeholder-count="1">
+              <div data-echo data-leaving="{{ e.leaving }}" key="{{ e.id }}" style="position:relative; padding-left:15px; border-left:1px solid var(--color-accent)">
+                <button onClick="{{ e.dismiss }}" style="position:absolute; top:-2px; right:0; background:transparent; border:none; cursor:pointer; padding:3px; color:color-mix(in srgb,var(--color-text) 32%,transparent); line-height:0" style-hover="color:var(--color-accent)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+                <div style="display:flex; gap:9px; align-items:flex-start; padding-right:20px">
+                  <sc-if value="{{ e.hasPerson }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:28px; height:28px; border-radius:50%; flex:none; border:1px solid var(--color-accent); background:var(--color-accent-100); display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-size:13px; color:var(--color-accent-800); margin-top:1px">{{ e.person }}</span>
+                  </sc-if>
+                  <sc-if value="{{ e.noPerson }}" hint-placeholder-val="{{ true }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none; margin-top:4px"><path d="M12 3l1.6 4.8L18 9l-4.4 1.2L12 15l-1.6-4.8L6 9l4.4-1.2z"/></svg>
+                  </sc-if>
+                  <div style="flex:1; min-width:0">
+                    <p style="margin:0; font-family:var(--font-heading); font-style:italic; font-size:16px; line-height:1.5; color:color-mix(in srgb,var(--color-text) 82%,transparent); text-wrap:pretty">{{ e.text }}</p>
+
+                    <sc-if value="{{ e.hasQuote }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px">
+                      <p style="margin:0; font-family:var(--font-heading); font-size:15px; line-height:1.45; color:color-mix(in srgb,var(--color-text) 70%,transparent)">{{ e.quote }}</p>
+                      <div class="text-muted" style="font-size:11px; letter-spacing:.04em; margin-top:3px">{{ e.quoteAttr }}</div>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ e.hasPhoto }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ e.open }}" style="cursor:pointer; margin-top:11px; display:flex; gap:11px; align-items:center">
+                      <div style="width:58px; height:58px; flex:none; border-radius:8px; overflow:hidden; border:4px solid var(--color-surface); outline:1px solid var(--color-divider)"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="echo-photo-srilanka" shape="rect" fit="cover" placeholder="Sri Lanka" hint-size="100%,100%"></x-import></div>
+                      <div style="min-width:0">
+                        <div style="font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ e.memLabel }}</div>
+                        <div style="font-family:var(--font-heading); font-style:italic; font-size:14px; line-height:1.35; color:color-mix(in srgb,var(--color-text) 74%,transparent); margin-top:2px">{{ e.memSnippet }}</div>
+                      </div>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ e.hasGrow }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin:10px 0 0; font-family:var(--font-heading); font-size:14px; color:var(--color-accent)">You’ve grown since then.</p>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+
+        </div>
+        </sc-if>
+
+        <!-- ══════════ LIFE (one page per day) ══════════ -->
+        <sc-if value="{{ isLife }}" hint-placeholder-val="{{ false }}">
+        <div data-screen style="padding:8px 0 130px">
+          <div style="padding:14px 26px 4px">
+            <h1 style="font-size:32px; font-weight:400; margin:0">Life</h1>
+            <p class="text-muted" style="font-size:13px; margin:4px 0 0">One page for every day you’ve lived.</p>
+          </div>
+          <sc-for list="{{ chapters }}" as="ch" hint-placeholder-count="1">
+          <div>
+            <div style="position:sticky; top:-1px; z-index:3; padding:16px 26px 10px; background:linear-gradient(var(--color-bg) 74%, transparent); backdrop-filter:blur(2px)">
+              <span style="font-family:var(--font-heading); font-size:44px; font-weight:400; color:color-mix(in srgb,var(--color-text) 15%,transparent); letter-spacing:-.02em; font-variant-numeric:tabular-nums">{{ ch.year }}</span>
+            </div>
+            <sc-for list="{{ ch.months }}" as="mo" hint-placeholder-count="1">
+            <div style="padding:0 26px">
+              <div style="display:flex; align-items:center; gap:12px; margin:6px 0 14px">
+                <span style="font-family:var(--font-heading); font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:var(--color-accent)">{{ mo.month }}</span>
+                <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px">
+                <sc-for list="{{ mo.items }}" as="d" hint-placeholder-count="2">
+
+                <!-- day with a photograph -->
+                <sc-if value="{{ d.isPhoto }}" hint-placeholder-val="{{ false }}">
+                <div data-rise onClick="{{ d.open }}" style="cursor:pointer; border-radius:12px; overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-sm)">
+                  <div style="position:relative; height:186px">
+                    <div style="position:absolute; inset:0"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="life-day-jun14" shape="rect" fit="cover" placeholder="Drop a photo from this day" hint-size="100%,100%"></x-import></div>
+                    <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(20,16,10,.66), transparent 60%); pointer-events:none"></div>
+                    <div style="position:absolute; left:16px; right:16px; bottom:14px; color:#f6f1e7; pointer-events:none">
+                      <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; opacity:.85; font-family:var(--font-heading)">{{ d.label }}</div>
+                      <div style="font-family:var(--font-heading); font-size:26px; font-weight:400; line-height:1.15; margin-top:3px; text-wrap:pretty">{{ d.preview }}</div>
+                    </div>
+                  </div>
+                  <div style="padding:13px 16px 15px">
+                    <div style="display:flex; gap:7px; flex-wrap:wrap; align-items:center">
+                      <span class="text-muted" style="font-size:12px; font-family:var(--font-heading); letter-spacing:.02em">{{ d.metaStr }}</span>
+                      <sc-if value="{{ d.hasMoments }}" hint-placeholder-val="{{ false }}"><span class="text-muted" style="font-size:12px">·  {{ d.momentsLabel }}</span></sc-if>
+                    </div>
+                    <sc-if value="{{ d.hasChips }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; gap:7px; margin-top:11px; flex-wrap:wrap">
+                      <sc-for list="{{ d.chips }}" as="c" hint-placeholder-count="1"><span class="tag tag-accent">{{ c.text }}</span></sc-for>
+                    </div>
+                    </sc-if>
+                  </div>
+                </div>
+                </sc-if>
+
+                <!-- plain day page -->
+                <sc-if value="{{ d.isPlain }}" hint-placeholder-val="{{ true }}">
+                <div data-rise onClick="{{ d.open }}" style="cursor:pointer; border:1px solid var(--color-divider); border-radius:12px; padding:16px 17px">
+                  <div style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ d.label }}</div>
+                  <div style="font-family:var(--font-heading); font-size:20px; font-weight:400; line-height:1.32; margin:6px 0 0; text-wrap:pretty">{{ d.preview }}</div>
+                  <div style="display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:9px">
+                    <span class="text-muted" style="font-size:12px; font-family:var(--font-heading); letter-spacing:.02em">{{ d.metaStr }}</span>
+                    <sc-if value="{{ d.hasMoments }}" hint-placeholder-val="{{ false }}"><span class="text-muted" style="font-size:12px">·  {{ d.momentsLabel }}</span></sc-if>
+                  </div>
+                  <sc-if value="{{ d.hasChips }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; gap:7px; margin-top:11px; flex-wrap:wrap">
+                    <sc-for list="{{ d.chips }}" as="c" hint-placeholder-count="1"><span class="tag tag-outline">{{ c.text }}</span></sc-for>
+                  </div>
+                  </sc-if>
+                </div>
+                </sc-if>
+
+                </sc-for>
+              </div>
+            </div>
+            </sc-for>
+          </div>
+          </sc-for>
+          <div style="text-align:center; padding:6px 26px 0" class="text-muted">
+            <p style="font-family:var(--font-heading); font-style:italic; font-size:15px; margin:0">Every story begins with a single page.</p>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ══════════ INSIGHTS ══════════ -->
+        <sc-if value="{{ isInsights }}" hint-placeholder-val="{{ false }}">
+        <div data-screen style="padding:8px 26px 130px">
+          <div style="padding:14px 0 4px">
+            <h1 style="font-size:32px; font-weight:400; margin:0">Insights</h1>
+            <p class="text-muted" style="font-size:13px; margin:4px 0 0">Not numbers. A reflection.</p>
+          </div>
+
+          <div data-rise style="margin-top:26px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">This month</div>
+            <p style="font-family:var(--font-heading); font-size:27px; font-weight:400; line-height:1.32; margin:12px 0 0; text-wrap:pretty">Your pages held <span style="color:var(--color-accent)">23 new ideas</span> — most of them written well after midnight.</p>
+          </div>
+
+          <!-- mood ribbon -->
+          <div data-rise style="margin-top:34px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 45%,transparent); font-family:var(--font-heading); margin-bottom:14px">Your mood, these thirty days</div>
+            <svg viewBox="0 0 320 90" style="width:100%; height:90px; overflow:visible">
+              <defs><linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="var(--color-neutral-500)"/><stop offset=".4" stop-color="var(--color-accent)"/><stop offset=".7" stop-color="#7a8f6f"/><stop offset="1" stop-color="var(--color-accent)"/>
+              </linearGradient></defs>
+              <path d="M0 60 C40 60 46 30 80 32 C120 34 120 66 160 58 C196 51 196 18 236 22 C276 26 286 46 320 40" fill="none" stroke="url(#ribbon)" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+              <path d="M0 60 C40 60 46 30 80 32 C120 34 120 66 160 58 C196 51 196 18 236 22 C276 26 286 46 320 40" fill="none" stroke="url(#ribbon)" stroke-width="16" stroke-linecap="round" opacity=".14"/>
+            </svg>
+            <p style="font-family:var(--font-heading); font-style:italic; font-size:16px; margin:10px 0 0; color:color-mix(in srgb,var(--color-text) 82%,transparent)">You seemed most energized while building.</p>
+          </div>
+
+          <!-- soft circles -->
+          <div data-rise style="margin-top:36px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 45%,transparent); font-family:var(--font-heading); margin-bottom:18px">Where your hours went</div>
+            <div style="display:flex; align-items:flex-end; justify-content:space-around; gap:8px">
+              <div style="text-align:center"><div style="width:104px; height:104px; border-radius:50%; border:1.5px solid var(--color-accent); background:var(--color-accent-100); display:flex; align-items:center; justify-content:center; margin:0 auto"><span style="font-family:var(--font-heading); font-size:26px; color:var(--color-accent-800)">42h</span></div><div style="font-size:12px; margin-top:9px; font-family:var(--font-heading)">Building</div></div>
+              <div style="text-align:center"><div style="width:70px; height:70px; border-radius:50%; border:1.5px solid var(--color-neutral-500); display:flex; align-items:center; justify-content:center; margin:0 auto"><span style="font-family:var(--font-heading); font-size:19px">12h</span></div><div style="font-size:12px; margin-top:9px; font-family:var(--font-heading)">Reading</div></div>
+              <div style="text-align:center"><div style="width:58px; height:58px; border-radius:50%; border:1.5px solid #7a8f6f; display:flex; align-items:center; justify-content:center; margin:0 auto"><span style="font-family:var(--font-heading); font-size:16px">6d</span></div><div style="font-size:12px; margin-top:9px; font-family:var(--font-heading)">Travel</div></div>
+            </div>
+          </div>
+
+          <!-- heatmap -->
+          <div data-rise style="margin-top:38px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 45%,transparent); font-family:var(--font-heading); margin-bottom:14px">Pages you kept</div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:7px">
+              <sc-for list="{{ heat }}" as="h" hint-placeholder-count="35"><div style="aspect-ratio:1; border-radius:4px; background:var(--color-accent); opacity:{{ h.o }}"></div></sc-for>
+            </div>
+            <p class="text-muted" style="font-size:12px; margin:12px 0 0">You kept a page on 24 of the last 35 days — your longest stretch yet.</p>
+          </div>
+
+          <!-- patterns -->
+          <div data-rise style="margin-top:38px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading); margin-bottom:14px">Life patterns</div>
+            <div style="display:flex; flex-direction:column; gap:14px">
+              <sc-for list="{{ patterns }}" as="p" hint-placeholder-count="3">
+              <div style="border-left:2px solid var(--color-accent); padding:2px 0 2px 15px">
+                <p style="font-family:var(--font-heading); font-size:19px; font-weight:400; line-height:1.35; margin:0; text-wrap:pretty">{{ p }}</p>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ══════════ SEARCH ══════════ -->
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+        <div data-screen style="padding:8px 26px 130px">
+          <h1 style="font-size:32px; font-weight:400; margin:16px 0 16px">Search</h1>
+          <div style="display:flex; align-items:center; gap:10px; border:1px solid var(--color-divider); border-radius:100px; padding:12px 18px; background:var(--color-surface)" style-focus-within="border-color:var(--color-accent)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="color-mix(in srgb,var(--color-text) 55%,transparent)" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Search your life…" style="flex:1; border:none; background:transparent; outline:none; font-family:var(--font-heading); font-size:18px; color:var(--color-text)"/>
+          </div>
+
+          <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:26px">
+            <div class="text-muted" style="font-size:12px; font-family:var(--font-heading); letter-spacing:.06em; margin-bottom:12px">TRY ASKING…</div>
+            <div style="display:flex; flex-direction:column; gap:1px">
+              <sc-for list="{{ exampleQueries }}" as="q" hint-placeholder-count="4">
+              <div onClick="{{ q.pick }}" style="cursor:pointer; padding:13px 2px; border-bottom:1px solid var(--color-divider); display:flex; justify-content:space-between; align-items:center; gap:10px" style-hover="color:var(--color-accent)">
+                <span style="font-family:var(--font-heading); font-size:17px">{{ q.text }}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="opacity:.5; flex:none"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:24px; display:flex; flex-direction:column; gap:2px">
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="2">
+            <div data-mat key="{{ r.rkey }}" onClick="{{ r.open }}" style="cursor:pointer; padding:16px 0; border-bottom:1px solid var(--color-divider)">
+              <div style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ r.label }}</div>
+              <div style="font-family:var(--font-heading); font-size:20px; font-weight:400; line-height:1.3; margin:5px 0 9px; text-wrap:pretty">{{ r.headline }}</div>
+              <div style="display:flex; gap:9px; align-items:flex-start">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" style="flex:none; margin-top:4px"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                <span style="font-style:italic; font-family:var(--font-heading); font-size:15px; color:color-mix(in srgb,var(--color-text) 70%,transparent); line-height:1.45">{{ r.why }}</span>
+              </div>
+            </div>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center; padding:60px 20px" class="text-muted">
+            <p style="font-family:var(--font-heading); font-style:italic; font-size:17px">Nothing yet — but every search teaches me a little more about you.</p>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <!-- ══════════ YOU ══════════ -->
+        <sc-if value="{{ isYou }}" hint-placeholder-val="{{ false }}">
+        <div data-screen style="padding:8px 26px 130px">
+          <div style="text-align:center; padding:22px 0 6px">
+            <div style="width:96px; height:96px; margin:0 auto; border-radius:50%; overflow:hidden; box-shadow:var(--shadow-md)"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="you-avatar" shape="circle" placeholder="You" hint-size="96px,96px"></x-import></div>
+            <h1 style="font-size:28px; font-weight:400; margin:16px 0 2px">Rejul</h1>
+            <p class="text-muted" style="font-size:13px; margin:0">Engineering student · building Reflect</p>
+          </div>
+
+          <div style="display:flex; justify-content:center; gap:0; margin:22px 0 4px; border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); padding:16px 0">
+            <div style="flex:1; text-align:center; border-right:1px solid var(--color-divider)"><div style="font-family:var(--font-heading); font-size:26px; font-variant-numeric:tabular-nums">18</div><div class="text-muted" style="font-size:11px; letter-spacing:.06em">DAY STREAK</div></div>
+            <div style="flex:1; text-align:center; border-right:1px solid var(--color-divider)"><div style="font-family:var(--font-heading); font-size:26px; font-variant-numeric:tabular-nums">146</div><div class="text-muted" style="font-size:11px; letter-spacing:.06em">PAGES</div></div>
+            <div style="flex:1; text-align:center"><div style="font-family:var(--font-heading); font-size:26px; font-variant-numeric:tabular-nums">12</div><div class="text-muted" style="font-size:11px; letter-spacing:.06em">BOOKS</div></div>
+          </div>
+
+          <div style="margin-top:26px; text-align:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-accent)" style="opacity:.5; margin:0 auto"><path d="M9.5 6C6 6 4 8.5 4 12v6h6v-6H7c0-2 1-3 2.5-3zm10 0c-3.5 0-5.5 2.5-5.5 6v6h6v-6h-3c0-2 1-3 2.5-3z"/></svg>
+            <p style="font-family:var(--font-heading); font-style:italic; font-size:20px; line-height:1.4; margin:12px 0 4px; text-wrap:pretty">The best ideas arrive when I stop chasing them.</p>
+            <div class="text-muted" style="font-size:12px">from your June 14th page · Mirissa</div>
+          </div>
+
+          <hr class="hr" style="margin:28px 0 22px">
+
+          <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading); margin-bottom:14px">Current goals</div>
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex; gap:12px; align-items:center">
+              <span style="width:20px; height:20px; border-radius:50%; border:1.5px solid var(--color-accent); flex:none; display:flex; align-items:center; justify-content:center"><span style="width:8px; height:8px; border-radius:50%; background:{{ g.dot }}"></span></span>
+              <span style="font-size:15px; line-height:1.4">{{ g.text }}</span>
+            </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading); margin:26px 0 12px">Values</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <sc-for list="{{ values }}" as="v" hint-placeholder-count="4"><span class="tag tag-outline" style="font-size:13px; padding:5px 13px">{{ v }}</span></sc-for>
+          </div>
+
+          <hr class="hr" style="margin:26px 0 18px">
+          <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 45%,transparent); font-family:var(--font-heading); margin-bottom:14px">Settings</div>
+          <div style="display:flex; flex-direction:column; gap:2px">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--color-divider)">
+              <span style="font-size:15px">Appearance</span>
+              <div class="seg"><label class="seg-opt"><input type="radio" name="rf-th" checked="{{ lightChecked }}" onChange="{{ setLight }}"/>Light</label><label class="seg-opt"><input type="radio" name="rf-th" checked="{{ darkChecked }}" onChange="{{ setDark }}"/>Dark</label></div>
+            </div>
+            <div onClick="{{ toggleMotion }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--color-divider)">
+              <span style="font-size:15px">Reduce motion</span>
+              <div style="width:44px; height:26px; border-radius:100px; padding:3px; background:{{ motionTrack }}; transition:background .3s; display:flex; justify-content:{{ motionJustify }}"><span style="width:20px; height:20px; border-radius:50%; background:var(--color-bg); box-shadow:var(--shadow-sm); transition:.3s"></span></div>
+            </div>
+            <div onClick="{{ toggleSound }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:13px 0">
+              <span style="font-size:15px">Paper sounds</span>
+              <div style="width:44px; height:26px; border-radius:100px; padding:3px; background:{{ soundTrack }}; transition:background .3s; display:flex; justify-content:{{ soundJustify }}"><span style="width:20px; height:20px; border-radius:50%; background:var(--color-bg); box-shadow:var(--shadow-sm); transition:.3s"></span></div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+
+      <!-- day page overlay -->
+      <sc-if value="{{ dayOpen }}" hint-placeholder-val="{{ false }}">
+      <div data-zoom style="position:absolute; inset:0; z-index:20; background:var(--color-bg); display:flex; flex-direction:column">
+        <div style="height:52px; flex:none; display:flex; align-items:center; padding:0 20px">
+          <button onClick="{{ closeDay }}" style="display:inline-flex; align-items:center; gap:5px; background:transparent; border:none; color:var(--color-accent); font-family:var(--font-heading); font-size:15px; cursor:pointer; padding:6px 4px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Life
+          </button>
+        </div>
+        <div data-noscroll style="flex:1; overflow-y:auto; padding:0 26px 40px">
+          <sc-if value="{{ day.hero }}" hint-placeholder-val="{{ false }}">
+          <div style="height:222px; border-radius:12px; overflow:hidden; margin-bottom:20px; position:relative"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="day-hero-jun14" shape="rect" fit="cover" placeholder="Drop a photo from this day" hint-size="100%,100%"></x-import></div>
+          </sc-if>
+          <sc-if value="{{ day.noHero }}" hint-placeholder-val="{{ true }}"><div style="height:8px"></div></sc-if>
+
+          <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ day.kicker }}</div>
+          <h1 style="font-size:36px; font-weight:400; line-height:1.08; margin:10px 0 12px; letter-spacing:-.015em; text-wrap:pretty">{{ day.long }}</h1>
+          <div class="text-muted" style="font-size:13px; font-family:var(--font-heading); letter-spacing:.03em">{{ day.metaStr }}</div>
+          <sc-if value="{{ day.hasPeople }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; gap:7px; margin-top:12px; flex-wrap:wrap">
+            <sc-for list="{{ day.people }}" as="pp" hint-placeholder-count="1"><span class="tag tag-neutral">{{ pp }}</span></sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{ day.hasChips }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; gap:7px; margin-top:12px; flex-wrap:wrap">
+            <sc-for list="{{ day.chips }}" as="c" hint-placeholder-count="1"><span class="tag tag-outline">{{ c.text }}</span></sc-for>
+          </div>
+          </sc-if>
+
+          <!-- the day, as one flowing page -->
+          <div style="margin-top:18px">
+            <sc-for list="{{ day.segments }}" as="seg" hint-placeholder-count="2">
+            <div>
+              <div style="display:flex; align-items:center; gap:14px; margin:22px 0 13px">
+                <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+                <span style="font-family:var(--font-heading); font-size:12px; letter-spacing:.16em; color:color-mix(in srgb,var(--color-text) 46%,transparent); font-variant-numeric:tabular-nums">{{ seg.time }}</span>
+                <span style="flex:1; height:1px; background:var(--color-divider)"></span>
+              </div>
+              <p style="margin:0; font-size:17px; line-height:1.85; text-align:justify; text-wrap:pretty">{{ seg.text }}</p>
+            </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:26px; border:1px solid var(--color-divider); border-radius:12px; padding:16px; background:var(--color-surface)">
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+              <span style="font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">Reflect noticed</span>
+            </div>
+            <p style="margin:0; font-size:15px; font-family:var(--font-heading); font-style:italic; line-height:1.5">{{ day.summary }}</p>
+          </div>
+
+          <sc-if value="{{ day.hasConnected }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:24px">
+            <div style="font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:color-mix(in srgb,var(--color-text) 45%,transparent); font-family:var(--font-heading); margin-bottom:12px">Connected days</div>
+            <div style="display:flex; flex-direction:column; gap:1px">
+              <sc-for list="{{ day.connectedItems }}" as="c" hint-placeholder-count="2">
+              <div onClick="{{ c.open }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--color-divider)" style-hover="color:var(--color-accent)">
+                <div style="min-width:0; padding-right:12px"><span style="font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--color-accent); font-family:var(--font-heading)">{{ c.label }}</span><div style="font-family:var(--font-heading); font-size:16px; line-height:1.3; margin-top:2px">{{ c.headline }}</div></div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="opacity:.5; flex:none"><path d="M9 6l6 6-6 6"/></svg>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- bottom nav -->
+      <div style="position:absolute; left:0; right:0; bottom:0; z-index:15; padding:10px 14px 8px; background:color-mix(in srgb,var(--color-bg) 82%,transparent); backdrop-filter:blur(20px); border-top:1px solid var(--color-divider)">
+        <div style="display:flex; justify-content:space-around; align-items:center">
+          <button onClick="{{ goToday }}" style="background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 8px; color:{{ c1 }}; transition:color .3s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+            <span style="font-size:10px; letter-spacing:.04em; font-family:var(--font-heading)">Today</span>
+          </button>
+          <button onClick="{{ goLife }}" style="background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 8px; color:{{ c2 }}; transition:color .3s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span style="font-size:10px; letter-spacing:.04em; font-family:var(--font-heading)">Life</span>
+          </button>
+          <button onClick="{{ goInsights }}" style="background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 8px; color:{{ c3 }}; transition:color .3s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            <span style="font-size:10px; letter-spacing:.04em; font-family:var(--font-heading)">Insights</span>
+          </button>
+          <button onClick="{{ goSearch }}" style="background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 8px; color:{{ c4 }}; transition:color .3s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="font-size:10px; letter-spacing:.04em; font-family:var(--font-heading)">Search</span>
+          </button>
+          <button onClick="{{ goYou }}" style="background:transparent; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 8px; color:{{ c5 }}; transition:color .3s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span style="font-size:10px; letter-spacing:.04em; font-family:var(--font-heading)">You</span>
+          </button>
+        </div>
+        <div style="width:120px; height:5px; border-radius:3px; background:var(--color-text); opacity:.28; margin:8px auto 0"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- external prototype controls -->
+  <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; justify-content:center; font-family:var(--font-heading)">
+    <button onClick="{{ toggleTheme }}" style="display:inline-flex; align-items:center; gap:8px; background:transparent; border:1px solid var(--color-divider); border-radius:100px; padding:9px 16px; color:var(--color-text); font-family:var(--font-heading); font-size:14px; cursor:pointer" style-hover="border-color:var(--color-accent); color:var(--color-accent)">
+      <sc-if value="{{ isLightTheme }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></sc-if>
+      <sc-if value="{{ isDarkTheme }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></sc-if>
+      {{ themeLabel }}
+    </button>
+    <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:color-mix(in srgb,var(--color-text) 60%,transparent)">
+      <span style="letter-spacing:.06em">TODAY LAYOUT</span>
+      <div class="seg">
+        <label class="seg-opt"><input type="radio" name="rf-dir" checked="{{ d1c }}" onChange="{{ setDir1 }}"/>Centered</label>
+        <label class="seg-opt"><input type="radio" name="rf-dir" checked="{{ d2c }}" onChange="{{ setDir2 }}"/>Editorial</label>
+        <label class="seg-opt"><input type="radio" name="rf-dir" checked="{{ d3c }}" onChange="{{ setDir3 }}"/>Quiet</label>
+      </div>
+    </div>
+  </div>
+  <p class="text-muted" style="font-size:12px; font-family:var(--font-heading); font-style:italic; text-align:center; max-width:440px">Continue today’s page — type to add a fresh moment. Scroll up to revisit earlier ones. Open any day in Life.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 760, &quot;height&quot;: 1000 },
+  &quot;defaultTheme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;light&quot;,&quot;dark&quot;], &quot;default&quot;: &quot;light&quot;, &quot;tsType&quot;: &quot;'light' | 'dark'&quot;, &quot;section&quot;: &quot;Prototype&quot; },
+  &quot;startTab&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;today&quot;,&quot;life&quot;,&quot;insights&quot;,&quot;search&quot;,&quot;you&quot;], &quot;default&quot;: &quot;today&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Prototype&quot; },
+  &quot;reduceMotion&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Prototype&quot; }
+}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      theme: props.defaultTheme || 'light',
+      tab: props.startTab || 'today',
+      todayDir: 1,
+      ritualIdx: 0,
+      draft: '',
+      sessionStarted: false,
+      dismissed: {}, leaving: {},
+      day: null,
+      query: '',
+      soundOn: false,
+      motionOn: !(props.reduceMotion),
+    };
+    this.rituals = [
+      { kind:'A question', text:'What surprised you today?', quote:false },
+      { kind:'A memory', text:'Last July you wrote that you wanted to build something people would use.', quote:false },
+      { kind:'An observation', text:'You haven\u2019t written about Reflect in a while.', quote:false },
+      { kind:'From an earlier page', text:'\u201CThe best ideas arrive when I stop chasing them.\u201D', quote:true },
+      { kind:'A blank page', text:'Today\u2019s page is yours.', quote:false },
+    ];
+    // Today \u2014 the active, still-evolving page
+    this.today = {
+      long:'Thursday, 17 July', place:'Bangalore', mood:'Focused', weather:'23\u00B0 Clear',
+      blocks:[
+        { kind:'time', time:'9:12 AM' },
+        { kind:'text', text:'Woke up thinking about the memory-linking bug. Made coffee and opened the laptop before I\u2019d even sat down properly.' },
+        { kind:'photos' },
+        { kind:'place', place:'Indiranagar, Bangalore', note:'Walked to the studio to clear my head \u2014 the city was only just waking up.' },
+        { kind:'music', title:'Time \u2014 from Interstellar', artist:'Hans Zimmer' },
+        { kind:'time', time:'2:30 PM' },
+        { kind:'text', text:'Small win \u2014 the linker resolves references now. Not wired into the interface yet, but the hard part feels behind me.' },
+        { kind:'voice', dur:'0:48', label:'A quick idea about the linking UI' },
+        { kind:'book', title:'The Almanack of Naval Ravikant', author:'Eric Jorgenson', quote:'\u201CPlay long-term games with long-term people.\u201D' },
+        { kind:'text', person:'A', personName:'Alex', text:'Called Alex to talk through the beta plan \u2014 twenty minutes and the whole roadmap felt lighter.' },
+        { kind:'reflection', text:'This is the third time you\u2019ve described Reflect as something you want to use yourself.' },
+      ],
+    };
+    // The past \u2014 one page per day
+    this.days = [
+      { id:'jun14', weekday:'Saturday', date:'14 June', long:'Saturday, 14 June', year:'2025', month:'June',
+        mood:'Awe', weather:'29\u00B0 Humid', place:'Mirissa, Sri Lanka', people:['Ishaan'], tags:['travel','ocean','whales'], photo:true,
+        attach:[{kind:'trip', label:'Sri Lanka'}],
+        segments:[
+          { time:'6:40 AM', text:'Took the dawn boat out of Mirissa. A blue whale surfaced maybe forty metres from us and the whole deck went silent. I have never felt that small, or that awake.' },
+          { time:'4:15 PM', text:'On the ride back I opened my notes and sketched the first version of Reflect. Funny how the best ideas arrive the moment you stop chasing them.' },
+        ],
+        summary:'The day you first sketched Reflect \u2014 on a boat, coming back from the whales.', connected:['may10','mar04'] },
+      { id:'may10', weekday:'Saturday', date:'10 May', long:'Saturday, 10 May', year:'2025', month:'May',
+        mood:'Curious', weather:'26\u00B0 Overcast', place:'Bangalore', people:[], tags:['learning','ai','agents'], photo:false,
+        attach:[{kind:'project', label:'Reflect'}],
+        segments:[
+          { time:'11:20 AM', text:'Spent the morning understanding how AI agents plan and use tools. Perceive, decide, act, remember \u2014 it\u2019s really just a loop.' },
+          { time:'11:58 PM', text:'It clicked around midnight: everyone skips the remember part. Which is, of course, the whole point of Reflect.' },
+        ],
+        summary:'A deep dive into how AI agents plan, act and remember.', connected:['jun14'] },
+      { id:'may04', weekday:'Sunday', date:'4 May', long:'Sunday, 4 May', year:'2025', month:'May',
+        mood:'Content', weather:'', place:'Bangalore', people:[], tags:['reading','philosophy'], photo:false,
+        attach:[{kind:'book', label:'The Almanack of Naval Ravikant'}],
+        segments:[
+          { time:'8:05 PM', text:'Finished Naval\u2019s Almanack in two sittings. \u201CPlay long-term games with long-term people.\u201D The line about specific knowledge will stay with me for weeks.' },
+        ],
+        summary:'You highlighted more of this book than any other this year.', connected:[] },
+      { id:'apr20', weekday:'Saturday', date:'20 April', long:'Saturday, 20 April', year:'2025', month:'April',
+        mood:'Restless', weather:'', place:'Bangalore', people:[], tags:['film'], photo:false,
+        attach:[{kind:'film', label:'Whiplash'}],
+        segments:[
+          { time:'10:40 PM', text:'Watched Whiplash a third time. Still can\u2019t breathe during the last ten minutes. It\u2019s obsession dressed as excellence \u2014 and I keep asking which one I\u2019m chasing.' },
+        ],
+        summary:'A late-night rewatch that left you questioning obsession versus excellence.', connected:[] },
+      { id:'mar04', weekday:'Tuesday', date:'4 March', long:'Tuesday, 4 March', year:'2025', month:'March',
+        mood:'Energized', weather:'24\u00B0 Clear', place:'Bangalore', people:['Alex'], tags:['people','startup'], photo:false,
+        attach:[],
+        segments:[
+          { time:'9:20 PM', text:'Met Alex at the hackathon. We sketched a whole product on a napkin in twenty minutes. Some people you argue with; others you build with. Alex is the second kind.' },
+        ],
+        summary:'The first day Alex appears in your pages.', connected:[] },
+      { id:'jan24', weekday:'Friday', date:'24 January', long:'Friday, 24 January', year:'2025', month:'January',
+        mood:'Restless', weather:'', place:'Bangalore', people:[], tags:['ai','abandoned','chess'], photo:false,
+        attach:[],
+        segments:[
+          { time:'4:30 PM', text:'I think I\u2019ll shelve the chess engine. Three weeks on move search taught me more about pruning than I expected \u2014 and that I don\u2019t want to build games. My heart isn\u2019t in it.' },
+        ],
+        summary:'The day you set the chess engine aside for good.', connected:[] },
+      { id:'dec29', weekday:'Sunday', date:'29 December', long:'Sunday, 29 December', year:'2024', month:'December',
+        mood:'Hopeful', weather:'19\u00B0 Cool', place:'Bangalore', people:[], tags:['reflection','habits'], photo:false,
+        attach:[{kind:'book', label:'Deep Work'}],
+        segments:[
+          { time:'10:15 PM', text:'Deep Work is what finally made me start writing a page a day \u2014 not to be productive, just to remember I was here. A new year is coming, and I don\u2019t want it to blur past like the last one.' },
+        ],
+        summary:'The page where your daily writing habit began.', connected:[] },
+    ];
+    this.monthOrder = { '2025':['July','June','May','April','March','February','January'], '2024':['December'] };
+    this.kinds = { trip:'Trip', book:'Book', film:'Film', project:'Project' };
+  }
+
+  goto = (t) => this.setState({ tab:t, day:null });
+  toggleTheme = () => this.setState(s => ({ theme: s.theme==='light'?'dark':'light' }));
+  nextRitual = () => this.setState(s => ({ ritualIdx: (s.ritualIdx+1) % this.rituals.length }));
+  onWrite = (e) => { const t = e.currentTarget.textContent || ''; this.setState({ draft:t, sessionStarted: t.length>0 }); };
+  dismissEcho = (id) => { this.setState(s => ({ leaving: { ...s.leaving, [id]:true } })); setTimeout(() => this.setState(s => { const d = { ...s.dismissed, [id]:true }; const l = { ...s.leaving }; delete l[id]; return { dismissed:d, leaving:l }; }), 440); };
+  openDayById = (id) => { const d = this.days.find(x=>x.id===id); if(d) this.openDay(d); };
+  openDay = (d) => this.setState({ day:d });
+  closeDay = () => this.setState({ day:null });
+  onSearch = (e) => this.setState({ query: e.currentTarget.value });
+  pick = (q) => this.setState({ query:q });
+
+  snip(t){ return t.length > 74 ? t.slice(0,72) + '\u2026' : t; }
+  chipsFor(d){ return (d.attach||[]).map(a => ({ text: (this.kinds[a.kind]||'') + ' \u00B7 ' + a.label })); }
+
+  echoesFor(t){
+    const x = (t||'').toLowerCase();
+    const raw = [];
+    if(/project|reflect|\bbuild|idea|start|beta|ship|product/.test(x)) raw.push({ id:'e-proj', text:'You first imagined something like this 14 months ago.', quote:'\u201CI want to build something people actually use.\u201D', quoteAttr:'29 December \u00B7 your first page', grow:true });
+    if(/sri lanka|travel|whale|trip|beach|ocean|mirissa/.test(x)) raw.push({ id:'e-trip', text:'This reminds me of your Sri Lanka page.', photo:true, memLabel:'14 June \u00B7 Mirissa', memSnippet:'Whale watching at dawn \u2014 the ocean went on forever.', dayId:'jun14' });
+    if(/alex|friend|call|met |team|together|talk/.test(x)) raw.push({ id:'e-alex', text:'You\u2019ve shared 42 memories with Alex.', person:'A' });
+    if(/hard|tired|difficult|stress|anxious|exam|overwhelm|stuck|doubt|afraid/.test(x)) raw.push({ id:'e-hard', text:'You felt something similar during exam season \u2014 and it passed.' });
+    if(raw.length===0 && (t||'').trim().length > 46) raw.push({ id:'e-quiet', text:'Your notebook is listening.' });
+    return raw.filter(e => !this.state.dismissed[e.id]).slice(0,2).map(e => ({
+      ...e,
+      hasQuote: !!e.quote, hasPhoto: !!e.photo, hasPerson: !!e.person, noPerson: !e.person, hasGrow: !!e.grow,
+      leaving: this.state.leaving[e.id] ? 'true' : null,
+      dismiss: () => this.dismissEcho(e.id),
+      open: e.dayId ? () => this.openDayById(e.dayId) : null,
+    }));
+  }
+
+  todayBlocks(){
+    const bars = [8,14,20,11,26,17,30,22,12,28,19,9,24,32,15,21,13,27,18,10,23,31,16,20,12,26,14,8].map(h=>({ h: h + 'px' }));
+    return this.today.blocks.map(b => ({
+      ...b,
+      isTime: b.kind==='time', isPhotos: b.kind==='photos', isPlace: b.kind==='place',
+      isMusic: b.kind==='music', isVoice: b.kind==='voice', isBook: b.kind==='book', isReflection: b.kind==='reflection',
+      plainText: b.kind==='text' && !b.person,
+      hasPerson: b.kind==='text' && !!b.person,
+      bars: b.kind==='voice' ? bars : [],
+    }));
+  }
+
+  chapters(){
+    const order = ['2025','2024'];
+    const byYear = {};
+    this.days.forEach(d => { (byYear[d.year] = byYear[d.year] || {}); (byYear[d.year][d.month] = byYear[d.year][d.month] || []).push(d); });
+    return order.filter(y=>byYear[y]).map(y => ({
+      year:y,
+      months: this.monthOrder[y].filter(m=>byYear[y][m]).map(m => ({
+        month:m,
+        items: byYear[y][m].map(d => {
+          const chips = this.chipsFor(d);
+          return {
+            ...d,
+            isPhoto: !!d.photo, isPlain: !d.photo,
+            label: d.weekday + '  \u00B7  ' + d.date,
+            preview: d.segments[0].text,
+            metaStr: [d.mood, d.place].filter(Boolean).join('  \u00B7  '),
+            hasMoments: d.segments.length > 1,
+            momentsLabel: d.segments.length + ' moments',
+            chips, hasChips: chips.length > 0,
+            open: () => this.openDay(d),
+          };
+        })
+      }))
+    }));
+  }
+
+  searchNow(q){
+    const x = (q||'').trim().toLowerCase();
+    if(!x) return [];
+    const toks = x.split(/\s+/).filter(t => t.length > 2);
+    const scored = this.days.map(d => {
+      const hay = [d.segments.map(s=>s.text).join(' '), (d.tags||[]).join(' '), (d.people||[]).join(' '), d.place, (d.attach||[]).map(a=>a.label).join(' '), d.mood].join(' ').toLowerCase();
+      let score = 0, hit = null;
+      toks.forEach(t => { if(hay.includes(t)){ score++; if(!hit) hit = t; } });
+      return { d, score, hit };
+    }).filter(r => r.score > 0).sort((a,b) => b.score - a.score).slice(0,4);
+    return scored.map(r => ({
+      rkey: r.d.id + x,
+      label: r.d.weekday + '  \u00B7  ' + r.d.date,
+      headline: this.snip(r.d.segments[0].text),
+      why: this.why(r.d, r.hit, x),
+      open: () => this.openDay(r.d),
+    }));
+  }
+  why(d, hit, q){
+    if(/alex/.test(q) && (d.people||[]).some(p=>/alex/i.test(p))) return 'The first time Alex appears in your pages \u2014 March 4th.';
+    if(/abandon|shelve|chess|quit|gave up/.test(q) && d.id==='jan24') return 'The page where you wrote \u201CI think I\u2019ll shelve this.\u201D';
+    if((d.attach||[]).some(a=>a.kind==='trip')) return 'Your Sri Lanka page \u2014 whale watching in Mirissa.';
+    if((d.attach||[]).some(a=>a.kind==='book')) return 'A book you finished on this page.';
+    if((d.attach||[]).some(a=>a.kind==='project')) return 'You\u2019ve returned to this idea across several pages.';
+    return 'Found on this page \u2014 you mentioned \u201C'+hit+'.\u201D';
+  }
+
+  renderVals(){
+    const s = this.state;
+    const r = this.rituals[s.ritualIdx];
+    const dark = s.theme==='dark';
+    const activeAccent = 'var(--color-accent)';
+    const inactive = 'color-mix(in srgb, var(--color-text) 42%, transparent)';
+    const results = this.searchNow(s.query);
+    const q = (s.query||'').trim();
+
+    let day = null;
+    if(s.day){
+      const d = s.day;
+      const chips = this.chipsFor(d);
+      day = {
+        ...d,
+        hero: !!d.photo, noHero: !d.photo,
+        kicker: d.place || d.weekday,
+        metaStr: [d.mood, d.weather, d.place].filter(Boolean).join('   \u00B7   '),
+        hasPeople: (d.people||[]).length > 0,
+        chips, hasChips: chips.length > 0,
+        segments: d.segments,
+        hasConnected: (d.connected||[]).length > 0,
+        connectedItems: (d.connected||[]).map(id => { const c = this.days.find(x=>x.id===id); if(!c) return null; return { label: c.weekday + '  \u00B7  ' + c.date, headline: this.snip(c.segments[0].text), open:()=>this.openDay(c) }; }).filter(Boolean),
+      };
+    }
+
+    return {
+      theme: s.theme,
+      reduceAttr: s.motionOn ? null : 'true',
+      isLightTheme: !dark, isDarkTheme: dark,
+      themeLabel: dark ? 'Dark' : 'Light',
+      toggleTheme: this.toggleTheme,
+
+      // tabs
+      isToday: s.tab==='today', isLife: s.tab==='life', isInsights: s.tab==='insights', isSearch: s.tab==='search', isYou: s.tab==='you',
+      goToday: ()=>this.goto('today'), goLife: ()=>this.goto('life'), goInsights: ()=>this.goto('insights'), goSearch: ()=>this.goto('search'), goYou: ()=>this.goto('you'),
+      c1: s.tab==='today'?activeAccent:inactive, c2: s.tab==='life'?activeAccent:inactive, c3: s.tab==='insights'?activeAccent:inactive, c4: s.tab==='search'?activeAccent:inactive, c5: s.tab==='you'?activeAccent:inactive,
+
+      // today directions
+      dir1: s.todayDir===1, dir2: s.todayDir===2, dir3: s.todayDir===3,
+      setDir1: ()=>this.setState({todayDir:1}), setDir2: ()=>this.setState({todayDir:2}), setDir3: ()=>this.setState({todayDir:3}),
+      d1c: s.todayDir===1, d2c: s.todayDir===2, d3c: s.todayDir===3,
+      greeting: 'Good evening, Rejul',
+      dateLabel: 'Thursday, 17 July',
+      mastheadDay: 'Thu 17',
+      mastheadRest: 'July, evening',
+      weatherLine: '23\u00B0 Clear \u00B7 Bangalore',
+      ritualKind: r.kind, ritualText: r.text, ritualStyle: r.quote?'italic':'normal',
+      ritualKey: 'rit'+s.ritualIdx,
+      ritualDots: this.rituals.map((_,i)=>({ bg: i===s.ritualIdx ? 'var(--color-accent)' : 'color-mix(in srgb,var(--color-text) 18%,transparent)' })),
+      nextRitual: this.nextRitual,
+
+      // today's living page
+      todayLong: this.today.long,
+      todayPlace: this.today.place,
+      todayBlocks: this.todayBlocks(),
+      sessionStarted: s.sessionStarted,
+      sessionTime: '8:42 PM',
+      onWrite: this.onWrite,
+      echoes: this.echoesFor(s.draft),
+      hasEchoes: this.echoesFor(s.draft).length > 0,
+
+      // life
+      chapters: this.chapters(),
+
+      // insights
+      heat: Array.from({length:35}, (_,i)=>{ const seq=[.12,.5,.85,.3,0,.65,.9,.4,.75,1,.2,0,.55,.8,.35,.7,.95,.15,.6,.85,.45,.9,.25,0,.7,.8,.5,.95,.3,.65,1,.4,.75,.2,.85]; return { o: (0.12 + (seq[i]??.3)*0.85).toFixed(2) }; }),
+      patterns: [
+        'You\u2019ve returned to the Reflect idea across five pages since December.',
+        'Your pages grow longest in the days after travelling.',
+        'Your calmest pages are written before 7am.',
+      ],
+
+      // search
+      query: s.query,
+      onSearch: this.onSearch,
+      showSuggest: q.length===0,
+      hasResults: q.length>0 && results.length>0,
+      noResults: q.length>0 && results.length===0,
+      results,
+      exampleQueries: [
+        { text:'The idea I had while travelling', pick:()=>this.pick('idea travelling whale') },
+        { text:'When did I first meet Alex?', pick:()=>this.pick('Alex') },
+        { text:'The AI project I abandoned', pick:()=>this.pick('abandoned chess ai') },
+        { text:'That book about deep focus', pick:()=>this.pick('deep focus book') },
+      ],
+
+      // you
+      goals: [
+        { text:'Ship the Reflect beta by winter', dot:'transparent' },
+        { text:'Read 20 books this year (12 / 20)', dot:'var(--color-accent)' },
+        { text:'Run a half marathon', dot:'transparent' },
+      ],
+      values: ['Curiosity','Craft','Calm','Long-term games'],
+      lightChecked: !dark, darkChecked: dark,
+      setLight: ()=>this.setState({theme:'light'}), setDark: ()=>this.setState({theme:'dark'}),
+      toggleMotion: ()=>this.setState(st=>({motionOn:!st.motionOn})),
+      motionTrack: s.motionOn ? 'var(--color-divider)' : 'var(--color-accent)',
+      motionJustify: s.motionOn ? 'flex-start' : 'flex-end',
+      toggleSound: ()=>this.setState(st=>({soundOn:!st.soundOn})),
+      soundTrack: s.soundOn ? 'var(--color-accent)' : 'var(--color-divider)',
+      soundJustify: s.soundOn ? 'flex-end' : 'flex-start',
+
+      // day overlay
+      dayOpen: !!s.day,
+      day,
+      closeDay: this.closeDay,
+    };
+  }
+}
+</script>
+</body>
+</html>
