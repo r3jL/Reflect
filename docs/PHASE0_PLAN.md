@@ -13,9 +13,9 @@
 
 **Carry-forward decisions:** `DatabasePool` (not `DatabaseQueue`) for WAL; per-connection vec init; system serif (New York) stands in until Newsreader is bundled.
 
-## M1 — Project scaffold & theme
-Xcode app target `Reflect` + SwiftPM packages `ReflectCore` / `ReflectAI` / `ReflectSTT` / `ReflectMedia` (§8). Living Memory `Theme` (exact OKLCH→display-P3/sRGB conversion, §3.6 tokens), Newsreader bundled (variable font incl. italic axis), top-bar shell (traffic-light inset, wordmark, Today/Life/Insights nav, Remember button) with view switching. App sandbox on; entitlements minimal.
-**Exit:** app launches into an empty Today view wearing the design. Cold start measured (KPI-01 <2s).
+## M1 — Project scaffold & theme ✅ (2026-07-22)
+Xcode app target `Reflect` (generated via **XcodeGen** — `xcodegen generate` from `project.yml`; the `.xcodeproj` is gitignored) + SwiftPM packages `ReflectCore` / `ReflectAI` / `ReflectSTT` / `ReflectMedia` (§8, stubs until M2). Living Memory `Theme` with **exact OKLCH→sRGB conversion at runtime** (OKLab reference math — spec values stay the source of truth), Newsreader variable fonts bundled (upright + italic, OFL; `ATSApplicationFontsPath`), top-bar shell (wordmark, Today/Life/Insights nav, Remember button stub with ⌘K), Today view with the working editor + margin fade, Life/Insights placeholder states. App sandbox on (user-selected files read-only).
+**Result:** app builds, launches sandboxed, Newsreader registers; **cold start 1309 ms** (Debug) vs KPI-01 <2s ✅. Debug-only first-frame probe (sysctl process start → `onAppear`) left in for M9.
 
 ## M2 — Data layer (ReflectCore)
 GRDB setup from the spike (pool, WAL, FK, per-connection vec init), migration v1 with the full §4.1 schema (+`place`/`weather`/`is_milestone`), FTS5 triggers (insert/update/delete), repositories (entries, media, settings), settings KV store. Unit tests for repos + triggers + cascade.

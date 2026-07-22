@@ -1,0 +1,49 @@
+# XcodeGen manifest — regenerate the project with: xcodegen generate
+name: Reflect
+options:
+  bundleIdPrefix: com.rejul
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  ReflectCore:
+    path: Packages/ReflectCore
+  ReflectAI:
+    path: Packages/ReflectAI
+  ReflectSTT:
+    path: Packages/ReflectSTT
+  ReflectMedia:
+    path: Packages/ReflectMedia
+
+targets:
+  Reflect:
+    type: application
+    platform: macOS
+    sources:
+      - path: Reflect
+    dependencies:
+      - package: ReflectCore
+      - package: ReflectAI
+      - package: ReflectSTT
+      - package: ReflectMedia
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rejul.reflect
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_ENTITLEMENTS: Reflect/Reflect.entitlements
+        ENABLE_HARDENED_RUNTIME: NO
+        SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: Reflect/Info.plist
+      properties:
+        CFBundleName: Reflect
+        CFBundleDisplayName: Reflect
+        LSMinimumSystemVersion: "14.0"
+        ATSApplicationFontsPath: "."
+        NSHumanReadableCopyright: ""
+        LSApplicationCategoryType: public.app-category.lifestyle

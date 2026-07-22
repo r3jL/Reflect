@@ -1,9 +1,11 @@
 # Swift / SwiftPM
 .build/
 .swiftpm/
-*.xcodeproj/xcuserdata/
-*.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
+.dd/
+
+# Xcode project is generated — run `xcodegen generate` (source: project.yml)
+Reflect.xcodeproj/
 
 # macOS
 .DS_Store
