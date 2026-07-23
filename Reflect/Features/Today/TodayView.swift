@@ -1,6 +1,8 @@
 // The writing room (§3.6), wired to ReflectCore (M3): the day's draft loads
 // or is created on appear, autosaves on idle/blur, and completes into the
-// pipeline. Marginalia content (echoes, observations) arrives with Phase 1.
+// pipeline. Responsive per the mockup: wide windows carry the living layer
+// in the page margins; narrow windows fold it into an inline section below
+// the writing. Marginalia content (echoes, observations) arrives in Phase 1.
 import SwiftUI
 
 struct TodayView: View {
@@ -8,38 +10,36 @@ struct TodayView: View {
     @State private var isTyping = false
     @State private var idleTimer: Timer?
 
+    private var marginOpacity: Double { isTyping ? 0.25 : 1 }
+
     var body: some View {
         GeometryReader { proxy in
             let wide = proxy.size.width >= 1160
             ScrollView(.vertical, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 0) {
-                    if wide {
+                if wide {
+                    HStack(alignment: .top, spacing: 0) {
                         marginColumn {
                             // Memory echoes appear here (Phase 1).
                             EmptyView()
                         }
-                    }
-
-                    centerColumn
-
-                    if wide {
+                        centerColumn
+                            .layoutPriority(1)
                         marginColumn {
-                            metaBlock(label: "Words today", value: "\(model.wordCount)")
-                            if model.streakDays > 1 {
-                                metaBlock(
-                                    label: "Writing streak",
-                                    value: "\(model.streakDays) days")
-                            }
-                            if model.onThisDay > 0 {
-                                metaBlock(
-                                    label: "On this day",
-                                    value: "\(model.onThisDay) past \(model.onThisDay == 1 ? "entry" : "entries")")
-                            }
+                            marginMetaBlocks
                         }
                     }
+                    .padding(.bottom, 100)
+                    .frame(maxWidth: 1300)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        centerColumn
+                        inlineLivingLayer
+                    }
+                    .frame(maxWidth: 720, alignment: .leading)
+                    .padding(.horizontal, 40)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: wide ? 1300 : 720)
-                .frame(maxWidth: .infinity)
             }
         }
         .background(Theme.paper)
@@ -68,9 +68,12 @@ struct TodayView: View {
 
             ZStack(alignment: .topLeading) {
                 if model.text.isEmpty {
+                    // Clear of the caret, which blinks at x0 (design: caret
+                    // sits just left of the first glyph).
                     Text("Begin…")
                         .font(Typography.serif(22))
                         .foregroundStyle(Theme.ink4)
+                        .padding(.leading, 5)
                         .padding(.top, 1)
                         .allowsHitTesting(false)
                 }
@@ -86,9 +89,9 @@ struct TodayView: View {
 
             completeRow.padding(.top, 34)
         }
-        .frame(width: Theme.writingColumnWidth)
+        .frame(maxWidth: Theme.writingColumnWidth, alignment: .leading)
         .padding(.top, 120)
-        .padding(.bottom, 160)
+        .padding(.bottom, 60)
     }
 
     /// Mood dot (hollow until reflection exists) · place · weather (FR-015).
@@ -151,14 +154,42 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Margins
+    // MARK: - The living layer (margins when wide, inline when narrow)
+
+    @ViewBuilder
+    private var marginMetaBlocks: some View {
+        metaBlock(label: "Words today", value: "\(model.wordCount)")
+        if model.streakDays > 1 {
+            metaBlock(label: "Writing streak", value: "\(model.streakDays) days")
+        }
+        if model.onThisDay > 0 {
+            metaBlock(
+                label: "On this day",
+                value: "\(model.onThisDay) past \(model.onThisDay == 1 ? "entry" : "entries")")
+        }
+    }
 
     private func marginColumn<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 34, content: content)
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .padding(.horizontal, 34)
             .padding(.top, 130)
-            .opacity(isTyping ? 0.25 : 1)
+            .opacity(marginOpacity)
+    }
+
+    /// Narrow windows: the mockup folds the living layer below the entry,
+    /// behind a hairline.
+    private var inlineLivingLayer: some View {
+        VStack(alignment: .leading, spacing: 30) {
+            Rectangle().fill(Theme.hair).frame(height: 1)
+            HStack(alignment: .top, spacing: 34) {
+                marginMetaBlocks
+                Spacer()
+            }
+        }
+        .padding(.top, 22)
+        .padding(.bottom, 120)
+        .opacity(marginOpacity)
     }
 
     private func metaBlock(label: String, value: String) -> some View {
@@ -183,7 +214,7 @@ struct TodayView: View {
     }
 }
 
-/// The design's 4s "breathing" dot (§3.6 motion vocabulary).
+/// The design's "breathing" dot (§3.6 motion vocabulary).
 struct BreathingDot: View {
     let color: Color
     @State private var up = false

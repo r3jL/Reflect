@@ -23,6 +23,8 @@ struct SerifTextView: NSViewRepresentable {
         textView.drawsBackground = false
         textView.insertionPointColor = Theme.accentNS
         textView.textContainerInset = .zero
+        // Align text (and caret) with the column edge — headers sit at x=0.
+        textView.textContainer?.lineFragmentPadding = 0
         textView.isAutomaticQuoteSubstitutionEnabled = true
         textView.isContinuousSpellCheckingEnabled = true
 
