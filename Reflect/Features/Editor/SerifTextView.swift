@@ -6,6 +6,8 @@ import SwiftUI
 struct SerifTextView: NSViewRepresentable {
     @Binding var text: String
     var onEdit: () -> Void = {}
+    var onBlur: () -> Void = {}
+    var focusOnAppear = false
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -37,6 +39,13 @@ struct SerifTextView: NSViewRepresentable {
             attributes, range: NSRange(location: 0, length: (text as NSString).length))
         textView.defaultParagraphStyle = paragraph
 
+        if focusOnAppear {
+            // AC-001: the editor opens focused on the body.
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
+
         return scrollView
     }
 
@@ -57,6 +66,10 @@ struct SerifTextView: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
             parent.onEdit()
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            parent.onBlur()
         }
     }
 }

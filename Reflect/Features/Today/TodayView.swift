@@ -1,16 +1,12 @@
-// The writing room (§3.6), M1 form: real date, live editor (in-memory until
-// M2/M3 persistence), margin scaffolding with the fade-while-writing behavior.
-// Marginalia content (echoes, observations) arrives with Phase 1.
+// The writing room (§3.6), wired to ReflectCore (M3): the day's draft loads
+// or is created on appear, autosaves on idle/blur, and completes into the
+// pipeline. Marginalia content (echoes, observations) arrives with Phase 1.
 import SwiftUI
 
 struct TodayView: View {
-    @State private var text = ""
+    @State private var model = TodayModel()
     @State private var isTyping = false
     @State private var idleTimer: Timer?
-
-    private var wordCount: Int {
-        text.split(whereSeparator: \.isWhitespace).count
-    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -28,7 +24,17 @@ struct TodayView: View {
 
                     if wide {
                         marginColumn {
-                            metaBlock(label: "Words today", value: "\(wordCount)")
+                            metaBlock(label: "Words today", value: "\(model.wordCount)")
+                            if model.streakDays > 1 {
+                                metaBlock(
+                                    label: "Writing streak",
+                                    value: "\(model.streakDays) days")
+                            }
+                            if model.onThisDay > 0 {
+                                metaBlock(
+                                    label: "On this day",
+                                    value: "\(model.onThisDay) past \(model.onThisDay == 1 ? "entry" : "entries")")
+                            }
                         }
                     }
                 }
@@ -37,6 +43,14 @@ struct TodayView: View {
             }
         }
         .background(Theme.paper)
+        .onAppear { model.load() }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: NSApplication.willTerminateNotification)
+        ) { _ in
+            model.flush()
+            model.saveContext()
+        }
     }
 
     // MARK: - Center: the writing
@@ -50,22 +64,91 @@ struct TodayView: View {
                 .font(Typography.serif(56, weight: .light))
                 .foregroundStyle(Theme.ink)
 
+            metaRow.padding(.top, 14)
+
             ZStack(alignment: .topLeading) {
-                if text.isEmpty {
+                if model.text.isEmpty {
                     Text("Begin…")
                         .font(Typography.serif(22))
                         .foregroundStyle(Theme.ink4)
                         .padding(.top, 1)
                         .allowsHitTesting(false)
                 }
-                SerifTextView(text: $text, onEdit: handleEdit)
-                    .frame(minHeight: 320)
+                SerifTextView(
+                    text: $model.text,
+                    onEdit: handleEdit,
+                    onBlur: { model.flush() },
+                    focusOnAppear: true
+                )
+                .frame(minHeight: 320)
             }
             .padding(.top, 44)
+
+            completeRow.padding(.top, 34)
         }
         .frame(width: Theme.writingColumnWidth)
         .padding(.top, 120)
         .padding(.bottom, 160)
+    }
+
+    /// Mood dot (hollow until reflection exists) · place · weather (FR-015).
+    private var metaRow: some View {
+        HStack(spacing: 14) {
+            Circle()
+                .stroke(Theme.ink4, lineWidth: 1.5)
+                .frame(width: 8, height: 8)
+
+            dotSeparator
+            contextField("Add place", text: $model.place)
+            dotSeparator
+            contextField("Weather", text: $model.weather)
+            Spacer()
+        }
+        .font(Typography.sans(12.5))
+        .foregroundStyle(Theme.ink3)
+    }
+
+    private var dotSeparator: some View {
+        Circle().fill(Theme.ink4).frame(width: 3, height: 3)
+    }
+
+    private func contextField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .textFieldStyle(.plain)
+            .foregroundStyle(Theme.ink3)
+            .fixedSize()
+            .onSubmit { model.saveContext() }
+    }
+
+    /// Quiet completion affordance; after completing, the AI-pending state
+    /// (AC-004) shows as a breathing dot until the pipeline drains (Phase 1).
+    @ViewBuilder
+    private var completeRow: some View {
+        if model.canComplete {
+            Button(action: { model.complete() }) {
+                HStack(spacing: 6) {
+                    Circle().fill(Theme.accent).frame(width: 5, height: 5)
+                    Text("Complete entry")
+                        .font(Typography.sans(11))
+                        .tracking(0.4)
+                }
+                .foregroundStyle(Theme.accent)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else if model.isCompleted {
+            HStack(spacing: 8) {
+                Kicker(text: "Completed")
+                if model.pendingJobs {
+                    HStack(spacing: 6) {
+                        BreathingDot(color: Theme.accentSoft)
+                        Text("AI pending")
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.ink4)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Margins
@@ -97,5 +180,21 @@ struct TodayView: View {
                 withAnimation(.easeIn(duration: 0.7)) { isTyping = false }
             }
         }
+    }
+}
+
+/// The design's 4s "breathing" dot (§3.6 motion vocabulary).
+struct BreathingDot: View {
+    let color: Color
+    @State private var up = false
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 5, height: 5)
+            .opacity(up ? 1 : 0.55)
+            .scaleEffect(up ? 1.35 : 1)
+            .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: up)
+            .onAppear { up = true }
     }
 }

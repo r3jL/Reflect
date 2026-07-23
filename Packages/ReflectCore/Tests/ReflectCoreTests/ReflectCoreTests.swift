@@ -202,6 +202,28 @@ final class ReflectCoreTests: XCTestCase {
         XCTAssertEqual(nearest?["distance"] ?? 1.0, 0.0, accuracy: 1e-5)
     }
 
+    // MARK: - Today helpers (M3)
+
+    func testFetchOrCreateForDateIsIdempotent() throws {
+        let repo = EntriesRepository(db)
+        let first = try repo.fetchOrCreateForDate("2026-07-23")
+        let second = try repo.fetchOrCreateForDate("2026-07-23")
+        XCTAssertEqual(first.id, second.id)
+        XCTAssertEqual(first.status, .draft)
+    }
+
+    func testStreakAndOnThisDaySources() throws {
+        let repo = EntriesRepository(db)
+        for date in ["2026-07-23", "2026-07-22", "2026-07-20", "2025-07-23"] {
+            try repo.createDraft(entryDate: date)
+        }
+        XCTAssertEqual(
+            try repo.distinctEntryDates(),
+            ["2026-07-23", "2026-07-22", "2026-07-20", "2025-07-23"])
+        XCTAssertEqual(
+            try repo.onThisDayCount(monthDay: "07-23", excludingDate: "2026-07-23"), 1)
+    }
+
     // MARK: - Formats
 
     func testEntryDateFormatting() {

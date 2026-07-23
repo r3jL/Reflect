@@ -103,6 +103,57 @@ public struct EntriesRepository {
         }
     }
 
+    /// Today view: the day's entry, created as a draft if absent (AC-001).
+    public func fetchOrCreateForDate(_ entryDate: String, now: Date = .now) throws -> Entry {
+        try db.writer.write { dbc in
+            if let existing = try Entry
+                .filter(Column("entry_date") == entryDate)
+                .filter(Column("is_deleted") == false)
+                .order(Column("created_at").desc)
+                .fetchOne(dbc)
+            {
+                return existing
+            }
+            let stamp = DBFormat.timestamp.string(from: now)
+            let entry = Entry(
+                id: UUID().uuidString, title: nil, body: "", entryDate: entryDate,
+                status: .draft, wordCount: 0, place: nil, weather: nil,
+                isMilestone: false, isDeleted: false,
+                createdAt: stamp, updatedAt: stamp, completedAt: nil)
+            try entry.insert(dbc)
+            return entry
+        }
+    }
+
+    /// Distinct days that have a non-trashed entry, newest first — the
+    /// writing-streak source (Today margin metadata).
+    public func distinctEntryDates(limit: Int = 400) throws -> [String] {
+        try db.reader.read { dbc in
+            try String.fetchAll(
+                dbc,
+                sql: """
+                    SELECT DISTINCT entry_date FROM entries
+                    WHERE is_deleted = 0
+                    ORDER BY entry_date DESC LIMIT ?
+                    """,
+                arguments: [limit])
+        }
+    }
+
+    /// "On this day" — past entries sharing the month-day (e.g. "07-23").
+    public func onThisDayCount(monthDay: String, excludingDate: String) throws -> Int {
+        try db.reader.read { dbc in
+            try Int.fetchOne(
+                dbc,
+                sql: """
+                    SELECT COUNT(*) FROM entries
+                    WHERE entry_date LIKE '%-' || ? AND entry_date <> ?
+                      AND is_deleted = 0
+                    """,
+                arguments: [monthDay, excludingDate]) ?? 0
+        }
+    }
+
     /// FR-009: reverse-chronological timeline (trash excluded).
     public func timeline(limit: Int = 100) throws -> [Entry] {
         try db.reader.read { dbc in
