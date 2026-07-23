@@ -15,6 +15,21 @@ public struct PipelineRepository {
 
     public init(_ db: AppDatabase) { self.db = db }
 
+    /// Crash recovery: only one process ever runs this queue, so any
+    /// `running` job found at startup is a stale claim from a killed
+    /// session — return it to pending (its attempt was already counted).
+    @discardableResult
+    public func recoverStaleRunning() throws -> Int {
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: """
+                    UPDATE pipeline_jobs SET status = 'pending'
+                    WHERE status = 'running'
+                    """)
+            return dbc.changesCount
+        }
+    }
+
     // MARK: - Claiming
 
     /// Claimable = pending, entry not trashed, and — for reflection — the
@@ -95,6 +110,21 @@ public struct PipelineRepository {
                     SET status = 'pending', last_error = ? WHERE id = ?
                     """,
                 arguments: [error, jobId])
+        }
+    }
+
+    /// Undo a claim that did no work (e.g. no runner registered for the
+    /// stage in this app version) — the attempt is not counted.
+    public func releaseClaim(jobId: String) throws {
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: """
+                    UPDATE pipeline_jobs
+                    SET status = 'pending', attempts = MAX(0, attempts - 1),
+                        started_at = NULL
+                    WHERE id = ? AND status = 'running'
+                    """,
+                arguments: [jobId])
         }
     }
 

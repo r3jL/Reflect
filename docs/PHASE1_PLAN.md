@@ -64,19 +64,28 @@ offline-queue-then-drain, skip, ledger rows, manual re-run revival, and a
 measured concurrency peak ≤2 across 12 slow jobs. ReflectCore 18/18; app
 builds with the new package graph.
 
-## M12 — Extraction stage (FR-021)
+## M12 — Extraction stage (FR-021) ✅ (2026-07-24)
 
-`prompts/extraction.md` + JSON schema (themes, tags, entities typed
-person/place/book/company/project/other, action items with due hints,
-self-questions). Writers: canonical theme dedupe (`themes.name` unique),
-entity dedupe on (name, type), link tables; **supersede-on-rerun** — a
-re-run replaces that entry's prior extraction rows in one transaction
-(AC-005). Only `title`+`body` are sent to the provider — place/weather/
-media stay local. Golden-transcript tests: canned Gemini responses →
-exact row assertions (AC-021); malformed-response tests → schema failure,
-no partial writes.
-**Exit:** AC-021 green on transcripts; re-run replaces cleanly; a real
-completed entry extracts end-to-end with a live key (manual smoke).
+Shipped: `Prompts.extractionSystem` (strict JSON contract, "extract only
+what is present, never invent"), `ExtractionOutput` Codable (decoding =
+validation), `ExtractionStage` runner (≥5-word guard → skip; list-size
+bounds; only title+body sent — verified by test), `MetadataRepository`
+(single-transaction supersede per AC-005, canonical theme dedupe, entity
+dedupe on (name,type), unknown entity types → `other`, insertion-order
+reads). App wiring: orchestrator lives in `AppServices` with the extraction
+runner + Keychain key provider; kicks on launch sweep, completion, and
+completed-entry edits; reconnect kick via `NetworkMonitor`.
+**Live smoke found and fixed two real queue bugs:** (1) `running` jobs
+stranded by a killed session are now recovered to pending on first drain
+(`recoverStaleRunning`); (2) claims for stages with no registered runner
+no longer burn attempts (`releaseClaim`) — previously they exhausted the
+retry budget across relaunches.
+**Result:** 6 golden-transcript tests (AC-021 rows, supersede, cross-entry
+dedupe, short-skip, no-partial-writes, privacy boundary) + 2 new queue
+tests — ReflectAI 26/26, ReflectCore 18/18. **Live: 15/15 real entries
+extracted via Gemini 2.5 Flash** — sensible themes/tags in the container
+DB, ledger shows 12-call sample at 4,881 prompt + 548 completion tokens ≈
+**$0.0028** (AC-030 tracking well under budget).
 
 ## M13 — Reflection + Embedding stages (FR-022, 023, 030)
 

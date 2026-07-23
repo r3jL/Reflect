@@ -24,6 +24,7 @@ public actor PipelineOrchestrator {
 
     private var inFlight = 0
     private var holdUntil: [String: ContinuousClock.Instant] = [:]
+    private var recoveredStaleClaims = false
 
     public init(
         db: AppDatabase,
@@ -58,6 +59,10 @@ public actor PipelineOrchestrator {
     // MARK: - Drain loop
 
     private func drain() async {
+        if !recoveredStaleClaims {
+            recoveredStaleClaims = true
+            try? repo.recoverStaleRunning()
+        }
         guard isEnabled(), isOnline() else { return }  // AC-004 / AC-025
         while inFlight < config.maxConcurrent {
             let now = ContinuousClock.now
@@ -85,8 +90,9 @@ public actor PipelineOrchestrator {
     private func execute(_ claim: PipelineRepository.Claim) async {
         guard let runner = runners[claim.job.stage] else {
             // No runner registered (stage lands in a later milestone):
-            // put the job back untouched for a future version to claim.
-            try? repo.returnToPending(jobId: claim.job.id, error: "no runner")
+            // release the claim without spending an attempt and hold it
+            // for this session.
+            try? repo.releaseClaim(jobId: claim.job.id)
             holdUntil[claim.job.id] = .now + .seconds(3600)
             return
         }

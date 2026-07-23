@@ -234,6 +234,52 @@ final class OrchestratorTests: XCTestCase {
         }
     }
 
+    // MARK: - Crash recovery
+
+    func testStaleRunningJobsRecoverOnFirstDrain() async throws {
+        let entry = try completedEntry()
+        try simulateStaleClaim(entryId: entry.id)
+        let orchestrator = makeOrchestrator(runners: [
+            .extraction: SucceedingRunner(),
+            .reflection: SucceedingRunner(),
+            .embedding: SucceedingRunner(),
+        ])
+        orchestrator.kick()
+        try await waitUntil {
+            try jobStatuses(entry.id).allSatisfy { $0.value == .success }
+        }
+    }
+
+    func testUnregisteredStageDoesNotBurnAttempts() async throws {
+        let entry = try completedEntry()
+        // Only extraction registered — like the app between M12 and M13.
+        let orchestrator = makeOrchestrator(runners: [
+            .extraction: SucceedingRunner()
+        ])
+        orchestrator.kick()
+        try await waitUntil {
+            try jobStatuses(entry.id)[.extraction] == .success
+        }
+        try? await Task.sleep(for: .milliseconds(120))
+        let jobs = try entries.jobs(entryId: entry.id)
+        for job in jobs where job.stage != .extraction {
+            XCTAssertEqual(job.status, .pending, "\(job.stage) waits for its runner")
+            XCTAssertEqual(job.attempts, 0, "no-runner claims must not cost attempts")
+        }
+    }
+
+    /// Simulates a killed session: a job left mid-claim.
+    private func simulateStaleClaim(entryId: String) throws {
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: """
+                    UPDATE pipeline_jobs SET status = 'running', attempts = 1
+                    WHERE entry_id = ? AND stage = 'extraction'
+                    """,
+                arguments: [entryId])
+        }
+    }
+
     // MARK: - Concurrency cap
 
     func testMaxTwoConcurrentJobs() async throws {

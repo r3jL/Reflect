@@ -130,6 +130,9 @@ final class TodayModel {
             lastWriteMs = ms
             persistedText = text
             refreshJobs()  // completed-entry edits re-enqueue (FR-004)
+            if entry.status == .completed {
+                AppServices.orchestrator.kick()
+            }
             #if DEBUG
             print("KPI-02 entry write: \(String(format: "%.1f", ms)) ms")
             #endif
@@ -161,6 +164,7 @@ final class TodayModel {
             entry = try repo.fetch(id: current.id)
             refreshJobs()
             refreshMarginMeta(now: .now)
+            AppServices.orchestrator.kick()  // FR-020: drain on completion
         } catch {
             assertionFailure("complete failed: \(error)")
         }

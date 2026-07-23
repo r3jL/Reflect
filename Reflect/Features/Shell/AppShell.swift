@@ -49,6 +49,10 @@ struct AppShell: View {
         }
         .background(Theme.paper)
         .ignoresSafeArea()
+        .onAppear {
+            // FR-020: launch sweep — drain anything left pending.
+            AppServices.orchestrator.kick()
+        }
         .onReceive(
             NotificationCenter.default.publisher(for: .reflectShowTrash)
         ) { _ in
