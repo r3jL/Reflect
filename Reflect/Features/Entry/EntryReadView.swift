@@ -10,6 +10,7 @@ struct EntryReadView: View {
     var onClose: () -> Void
     var onPrev: (() -> Void)?
     var onNext: (() -> Void)?
+    var onTrash: (() -> Void)?
 
     @State private var contentVisible = false
     @State private var media: [Media] = []
@@ -40,6 +41,21 @@ struct EntryReadView: View {
                             }
                         }
                         .padding(.top, 14)
+                    }
+
+                    if let onTrash {
+                        Button(action: onTrash) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 10))
+                                Text("Move to Trash")
+                                    .font(Typography.sans(11))
+                            }
+                            .foregroundStyle(Theme.ink4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 40)
                     }
                 }
                 .frame(maxWidth: 660, alignment: .leading)

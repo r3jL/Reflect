@@ -44,7 +44,12 @@ struct RememberView: View {
                 EntryReadView(
                     entry: opened,
                     mood: model.openedMood,
-                    onClose: { withAnimation(.easeOut(duration: 0.3)) { model.opened = nil } }
+                    onClose: { withAnimation(.easeOut(duration: 0.3)) { model.opened = nil } },
+                    onTrash: {
+                        try? AppServices.entries.softDelete(id: opened.id)
+                        withAnimation(.easeOut(duration: 0.3)) { model.opened = nil }
+                        model.refresh()
+                    }
                 )
                 .padding(40)
                 .transition(.scale(scale: 0.985).combined(with: .opacity))

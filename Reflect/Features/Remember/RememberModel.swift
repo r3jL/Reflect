@@ -67,6 +67,12 @@ final class RememberModel {
         }
     }
 
+    /// Re-run the current query (after a trash action, for instance).
+    func refresh() {
+        guard !isEmptyState else { return }
+        runSearch()
+    }
+
     private func runSearch() {
         let hits = (try? repo.searchKeyword(query)) ?? []
         var order: [String] = []

@@ -36,5 +36,21 @@ struct ReflectApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 820)
+        .commands {
+            CommandGroup(after: .appSettings) {
+                Button("Show Trash") {
+                    NotificationCenter.default.post(name: .reflectShowTrash, object: nil)
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+            }
+        }
+
+        Settings {
+            SettingsView()
+        }
     }
+}
+
+extension Notification.Name {
+    static let reflectShowTrash = Notification.Name("reflect.showTrash")
 }

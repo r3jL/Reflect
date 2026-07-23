@@ -43,7 +43,12 @@ struct LifeView: View {
                     mood: model.days.first { $0.entry?.id == selected.id }?.mood,
                     onClose: { close() },
                     onPrev: { withAnimation(.easeInOut(duration: 0.25)) { model.selectNeighbor(-1) } },
-                    onNext: { withAnimation(.easeInOut(duration: 0.25)) { model.selectNeighbor(1) } }
+                    onNext: { withAnimation(.easeInOut(duration: 0.25)) { model.selectNeighbor(1) } },
+                    onTrash: {
+                        try? AppServices.entries.softDelete(id: selected.id)
+                        close()
+                        model.load()
+                    }
                 )
                 .matchedGeometryEffect(id: selected.id, in: morphSpace)
                 .padding(24)
