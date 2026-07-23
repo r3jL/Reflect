@@ -5,6 +5,7 @@ import SwiftUI
 
 struct TopBar: View {
     @Binding var section: AppSection
+    var onRemember: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 20) {
@@ -22,7 +23,7 @@ struct TopBar: View {
 
             Spacer()
 
-            RememberButton()
+            RememberButton(action: onRemember)
         }
         .padding(.horizontal, 18)
         .frame(height: Theme.topBarHeight)
@@ -51,12 +52,11 @@ struct TopBar: View {
     }
 }
 
-/// Placeholder until M6 — visual only, matching the mockup's search affordance.
 private struct RememberButton: View {
+    var action: () -> Void
+
     var body: some View {
-        Button {
-            // ⌘K overlay lands in M6.
-        } label: {
+        Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11, weight: .medium))

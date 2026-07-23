@@ -8,8 +8,8 @@ struct EntryReadView: View {
     let entry: Entry
     let mood: Theme.Mood?
     var onClose: () -> Void
-    var onPrev: () -> Void
-    var onNext: () -> Void
+    var onPrev: (() -> Void)?
+    var onNext: (() -> Void)?
 
     @State private var contentVisible = false
     @State private var media: [Media] = []
@@ -53,14 +53,16 @@ struct EntryReadView: View {
 
             closeButton.padding(16)
 
-            HStack {
-                edgeNavButton("chevron.left", action: onPrev)
-                Spacer()
-                edgeNavButton("chevron.right", action: onNext)
+            if onPrev != nil || onNext != nil {
+                HStack {
+                    if let onPrev { edgeNavButton("chevron.left", action: onPrev) }
+                    Spacer()
+                    if let onNext { edgeNavButton("chevron.right", action: onNext) }
+                }
+                .frame(maxHeight: .infinity)
+                .padding(.horizontal, 10)
+                .opacity(contentVisible ? 1 : 0)
             }
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, 10)
-            .opacity(contentVisible ? 1 : 0)
         }
         .background(
             RoundedRectangle(cornerRadius: 8)

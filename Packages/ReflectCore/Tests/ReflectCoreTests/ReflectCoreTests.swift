@@ -250,6 +250,51 @@ final class ReflectCoreTests: XCTestCase {
         XCTAssertEqual(try entries.moodLabels(entryIds: []), [:])
     }
 
+    // MARK: - Remember (M6)
+
+    func testRecentPlaces() throws {
+        let repo = EntriesRepository(db)
+        let a = try repo.createDraft(entryDate: "2026-07-20")
+        let b = try repo.createDraft(entryDate: "2026-07-21")
+        try repo.updateContext(id: a.id, place: "Lisbon", weather: nil, isMilestone: false)
+        try repo.updateContext(id: b.id, place: "The studio", weather: nil, isMilestone: false)
+        XCTAssertEqual(try repo.recentPlaces(), ["The studio", "Lisbon"])
+    }
+
+    /// AC-009 / KPI-05: keyword search over a 1k-entry journal in <150ms.
+    func testKeywordSearchAt1kEntriesWithinBudget() throws {
+        let repo = EntriesRepository(db)
+        let filler = [
+            "Slow morning, the kind that forgives you for it.",
+            "Worked on the typeface until the names blurred.",
+            "A walk by the river; two herons, one idea.",
+            "Read in the studio until the light moved on.",
+        ]
+        try db.writer.write { dbc in
+            let stamp = DBFormat.timestamp.string(from: .now)
+            for i in 0..<1000 {
+                let day = String(
+                    format: "%04d-%02d-%02d", 2020 + i / 365, 1 + (i / 28) % 12, 1 + i % 28)
+                let body = i % 97 == 0
+                    ? "We landed in Lisbon and the light did the thing. (\(i))"
+                    : "\(filler[i % filler.count]) (\(i))"
+                try dbc.execute(
+                    sql: """
+                        INSERT INTO entries (id, body, entry_date, status, word_count,
+                                             created_at, updated_at)
+                        VALUES (?, ?, ?, 'completed', 10, ?, ?)
+                        """,
+                    arguments: [UUID().uuidString, body, day, stamp, stamp])
+            }
+        }
+
+        let t0 = ContinuousClock.now
+        let hits = try repo.searchKeyword("lisbon")
+        let elapsed = ContinuousClock.now - t0
+        XCTAssertEqual(hits.count, 11)  // ceil(1000/97)
+        XCTAssertLessThan(elapsed, .milliseconds(150), "KPI-05 budget")
+    }
+
     // MARK: - Formats
 
     func testEntryDateFormatting() {

@@ -238,6 +238,20 @@ public struct EntriesRepository {
         }
     }
 
+    /// Recently used places (Remember suggestion chips).
+    public func recentPlaces(limit: Int = 6) throws -> [String] {
+        try db.reader.read { dbc in
+            try String.fetchAll(
+                dbc,
+                sql: """
+                    SELECT DISTINCT place FROM entries
+                    WHERE place IS NOT NULL AND place <> '' AND is_deleted = 0
+                    ORDER BY entry_date DESC LIMIT ?
+                    """,
+                arguments: [limit])
+        }
+    }
+
     // MARK: - Trash (FR-010)
 
     public func softDelete(id: String, now: Date = .now) throws {
