@@ -174,6 +174,25 @@ enum Migrations {
                 """)
         }
 
+        // v2 (Phase 1 / M10): AI spend ledger — KPI-10 is measured, not
+        // guessed. One row per provider call; cost_estimate is a local
+        // approximation (OpenRouter remains the billing truth).
+        migrator.registerMigration("v2") { db in
+            try db.execute(sql: """
+                CREATE TABLE ai_usage (
+                    id                TEXT PRIMARY KEY,
+                    entry_id          TEXT,               -- nullable: not all calls are entry-bound
+                    stage             TEXT,               -- extraction|reflection|embedding|search
+                    model             TEXT NOT NULL,
+                    prompt_tokens     INTEGER NOT NULL,
+                    completion_tokens INTEGER NOT NULL,
+                    cost_estimate     REAL,               -- USD; NULL when model unpriced
+                    created_at        TEXT NOT NULL
+                );
+                CREATE INDEX idx_usage_created ON ai_usage(created_at);
+                """)
+        }
+
         return migrator
     }
 }

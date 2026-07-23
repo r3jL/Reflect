@@ -23,19 +23,24 @@
   breathes on completed entries.
 - The OpenRouter key lives in the Keychain (⌘,); `ai.enabled` gates it all.
 
-## M10 — Provider layer (`ReflectAI`: protocols + OpenRouter)
+## M10 — Provider layer (`ReflectAI`: protocols + OpenRouter) ✅ (2026-07-24)
 
-`AiProvider` protocol (structured-JSON chat + embeddings) and the defined-
-but-unimplemented `LocalLlmProvider` (FR-025). OpenRouter adapter:
-`URLSession` + Keychain key, per-stage model ids from Settings, strict
-JSON-schema response validation (one retry on schema mismatch), error
-taxonomy (auth / rate-limit / network / schema / provider) so the queue can
-tell retryable from terminal. **Migration v2:** `ai_usage` ledger
-(job, model, tokens in/out, cost estimate) — KPI-10 is measured, not
-guessed. Tests against a stub `URLProtocol` (golden request/response
-transcripts; no network in CI).
-**Exit:** adapter round-trips canned extraction/reflection/embedding calls;
-usage rows written; auth/rate-limit/schema failures classified correctly.
+Shipped: `AiProvider` (generic structured-JSON chat decoded straight into
+caller `Codable` types + batch embeddings) and the defined-only
+`LocalLlmProvider` (FR-025). `OpenRouterProvider`: key via injected
+provider (Keychain at the app boundary), `response_format: json_object`,
+code-fence-tolerant decoding, **one corrective retry on schema mismatch**
+(the retry prompt cites the decode error) then hard `.schema` failure —
+never repaired/partial data. Error taxonomy with `isRetryable` contract:
+`.auth`/`.schema`/`.notConfigured` terminal; `.rateLimited` (honors
+Retry-After) /`.network`/5xx retryable. `ModelPricing` local price table.
+**Migration v2** adds the `ai_usage` ledger + `UsageRepository`
+(`monthTotal` for the Settings spend line).
+**Result:** 8/8 provider tests (stub `URLProtocol`, golden transcripts —
+happy paths, fenced JSON, retry-then-succeed, retry-then-fail, embeddings
+index ordering, no-key-no-network, 401/429/503 classification, pricing);
+ledger test green; **v1→v2 migration verified on the real container DB**
+(entries intact, `ai_usage` present).
 
 ## M11 — Orchestrator + durable queue (FR-020)
 

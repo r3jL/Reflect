@@ -295,6 +295,34 @@ final class ReflectCoreTests: XCTestCase {
         XCTAssertLessThan(elapsed, .milliseconds(150), "KPI-05 budget")
     }
 
+    // MARK: - AI usage ledger (M10, migration v2)
+
+    func testUsageLedgerMonthTotals() throws {
+        let usage = UsageRepository(db)
+        let july = DateComponents(
+            calendar: .current, year: 2026, month: 7, day: 10, hour: 12
+        ).date!
+        try usage.record(
+            entryId: nil, stage: "extraction", model: "google/gemini-2.5-flash",
+            promptTokens: 900, completionTokens: 300, costEstimate: 0.001, now: july)
+        try usage.record(
+            entryId: nil, stage: "reflection", model: "anthropic/claude-sonnet-4.6",
+            promptTokens: 1200, completionTokens: 400, costEstimate: 0.0096, now: july)
+        try usage.record(
+            entryId: nil, stage: "embedding", model: "unpriced/model",
+            promptTokens: 500, completionTokens: 0, costEstimate: nil, now: july)
+
+        let total = try usage.monthTotal("2026-07")
+        XCTAssertEqual(total.calls, 3)
+        XCTAssertEqual(total.promptTokens, 2600)
+        XCTAssertEqual(total.completionTokens, 700)
+        XCTAssertEqual(try XCTUnwrap(total.costEstimate), 0.0106, accuracy: 1e-6)
+
+        let empty = try usage.monthTotal("2026-06")
+        XCTAssertEqual(empty.calls, 0)
+        XCTAssertNil(empty.costEstimate)
+    }
+
     // MARK: - Formats
 
     func testEntryDateFormatting() {
