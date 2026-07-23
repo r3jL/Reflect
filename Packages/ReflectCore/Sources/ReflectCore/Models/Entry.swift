@@ -3,7 +3,7 @@
 import Foundation
 import GRDB
 
-public struct Entry: Codable, Equatable, Identifiable,
+public struct Entry: Codable, Equatable, Identifiable, Sendable,
     FetchableRecord, PersistableRecord
 {
     public enum Status: String, Codable, Sendable {
@@ -33,7 +33,7 @@ public struct Entry: Codable, Equatable, Identifiable,
     }
 }
 
-public struct Media: Codable, Equatable, Identifiable,
+public struct Media: Codable, Equatable, Identifiable, Sendable,
     FetchableRecord, PersistableRecord
 {
     public enum MediaType: String, Codable, Sendable {
@@ -58,7 +58,7 @@ public struct Media: Codable, Equatable, Identifiable,
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
 }
 
-public struct PipelineJob: Codable, Equatable, Identifiable,
+public struct PipelineJob: Codable, Equatable, Identifiable, Sendable,
     FetchableRecord, PersistableRecord
 {
     public enum Stage: String, Codable, CaseIterable, Sendable {

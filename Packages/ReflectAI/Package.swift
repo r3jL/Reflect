@@ -1,4 +1,6 @@
 // swift-tools-version: 5.10
+// ReflectAI — provider abstraction, OpenRouter adapter, and the pipeline
+// orchestrator + stages (spec §8).
 import PackageDescription
 
 let package = Package(
@@ -7,8 +9,14 @@ let package = Package(
     products: [
         .library(name: "ReflectAI", targets: ["ReflectAI"])
     ],
+    dependencies: [
+        .package(path: "../ReflectCore")
+    ],
     targets: [
-        .target(name: "ReflectAI"),
+        .target(
+            name: "ReflectAI",
+            dependencies: ["ReflectCore"]
+        ),
         .testTarget(name: "ReflectAITests", dependencies: ["ReflectAI"]),
     ]
 )

@@ -42,19 +42,27 @@ index ordering, no-key-no-network, 401/429/503 classification, pricing);
 ledger test green; **v1→v2 migration verified on the real container DB**
 (entries intact, `ai_usage` present).
 
-## M11 — Orchestrator + durable queue (FR-020)
+## M11 — Orchestrator + durable queue (FR-020) ✅ (2026-07-24)
 
-Actor-based runner in `ReflectCore`: claims `pending` jobs, enforces stage
-order (Reflection waits on Extraction success; Embedding independent —
-AC-020), bounded retries with exponential backoff (≤3 attempts), per-stage
-`running/success/failed` transitions with `last_error`, ≤2 concurrent
-provider calls. Triggers: entry completion, app launch sweep, reconnect
-(`NWPathMonitor`) — AC-025. Gates: `ai.enabled` + key present, else jobs
-stay `pending` (AC-004 semantics preserved). Manual re-run API (FR-031)
-resets a stage through the existing enqueue path. Failure = job `failed` +
-`last_error`, no derived rows (AC-024).
-**Exit:** mock-provider tests prove ordering, retry/backoff, offline
-queueing + drain, failure semantics, re-run.
+Shipped per spec §8 layout: `PipelineRepository` in ReflectCore owns the
+SQL invariants — atomic claims (`UPDATE … WHERE status='pending'` guard),
+stage dependency in the claim query (reflection claimable only after
+extraction success — AC-020), trash exclusion, the failure state machine,
+and `reenqueue` (FR-031). A **terminally failed extraction cascades a
+`skipped` reflection** (with reason) so entries never breathe "AI pending"
+forever. `PipelineOrchestrator` actor in ReflectAI: ≤2 concurrent stage
+runs, exponential backoff (base×2^attempts, capped; honors Retry-After) via
+in-memory holds + delayed kicks, `isEnabled`/`isOnline` gates checked per
+drain (AC-004/AC-025), ledger write on every success (stage, model, tokens,
+priced estimate), `StageNotApplicable` → `skipped`. Stages plug in as
+`PipelineStageRunner`s (M12/M13); a claimed job with no registered runner
+is returned to pending untouched. `NetworkMonitor` (NWPathMonitor) exposes
+`isOnline` + a reconnect callback for the app to `kick()`.
+**Result: 10/10 orchestrator tests** — ordering, extraction-failure
+cascade, retry-then-succeed (attempts=3), budget exhaustion, disabled gate,
+offline-queue-then-drain, skip, ledger rows, manual re-run revival, and a
+measured concurrency peak ≤2 across 12 slow jobs. ReflectCore 18/18; app
+builds with the new package graph.
 
 ## M12 — Extraction stage (FR-021)
 
