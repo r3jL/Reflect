@@ -47,3 +47,4 @@ targets:
         ATSApplicationFontsPath: "."
         NSHumanReadableCopyright: ""
         LSApplicationCategoryType: public.app-category.lifestyle
+        NSMicrophoneUsageDescription: Reflect records only while you dictate, and transcribes entirely on this Mac. Audio never leaves the device.

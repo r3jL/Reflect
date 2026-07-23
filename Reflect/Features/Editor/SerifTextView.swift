@@ -3,11 +3,23 @@
 import AppKit
 import SwiftUI
 
+/// Bridge for programmatic edits at the caret (voice insertion). Inserting
+/// through NSTextView keeps undo and the delegate/autosave path intact.
+final class EditorController {
+    fileprivate weak var textView: NSTextView?
+
+    func insertAtCaret(_ text: String) {
+        guard let textView else { return }
+        textView.insertText(text, replacementRange: textView.selectedRange())
+    }
+}
+
 struct SerifTextView: NSViewRepresentable {
     @Binding var text: String
     var onEdit: () -> Void = {}
     var onBlur: () -> Void = {}
     var focusOnAppear = false
+    var controller: EditorController?
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -40,6 +52,8 @@ struct SerifTextView: NSViewRepresentable {
         textView.textStorage?.setAttributes(
             attributes, range: NSRange(location: 0, length: (text as NSString).length))
         textView.defaultParagraphStyle = paragraph
+
+        controller?.textView = textView
 
         if focusOnAppear {
             // AC-001: the editor opens focused on the body.

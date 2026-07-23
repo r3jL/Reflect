@@ -13,6 +13,8 @@ struct TodayView: View {
     @State private var idleTimer: Timer?
     @State private var showFileImporter = false
     @State private var pickedPhotos: [PhotosPickerItem] = []
+    @State private var voice = VoiceModel()
+    private let editorController = EditorController()
 
     private var marginOpacity: Double { isTyping ? 0.25 : 1 }
 
@@ -85,7 +87,8 @@ struct TodayView: View {
                     text: $model.text,
                     onEdit: handleEdit,
                     onBlur: { model.flush() },
-                    focusOnAppear: true
+                    focusOnAppear: true,
+                    controller: editorController
                 )
                 .frame(minHeight: 320)
             }
@@ -131,7 +134,7 @@ struct TodayView: View {
         }
     }
 
-    /// Quiet attach affordances beside Complete: files + Photos library.
+    /// Quiet attach affordances beside Complete: files, Photos, voice.
     private var attachButtons: some View {
         HStack(spacing: 16) {
             Button(action: { showFileImporter = true }) {
@@ -146,7 +149,41 @@ struct TodayView: View {
                 attachLabel("photo.stack", "From Photos")
             }
             .buttonStyle(.plain)
+
+            voiceButton
         }
+    }
+
+    /// FR-029: record → on-device whisper → text at the caret.
+    private var voiceButton: some View {
+        Button(action: {
+            voice.toggle { transcript in
+                editorController.insertAtCaret(transcript)
+            }
+        }) {
+            HStack(spacing: 6) {
+                switch voice.phase {
+                case .recording:
+                    BreathingDot(color: Theme.accent)
+                    Text("listening — click to stop")
+                case .transcribing:
+                    BreathingDot(color: Theme.accentSoft)
+                    Text("transcribing…")
+                case .downloading(let fraction):
+                    BreathingDot(color: Theme.accentSoft)
+                    Text("fetching model \(Int(fraction * 100))%")
+                case .idle, .denied:
+                    Image(systemName: "mic").font(.system(size: 11))
+                    Text(voice.modelDownloaded ? "Voice" : "Voice (downloads model)")
+                }
+            }
+            .font(Typography.sans(11))
+            .tracking(0.4)
+            .foregroundStyle(voice.phase == .recording ? Theme.accent : Theme.ink3)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(voice.errorText ?? "Dictate into your entry — audio never leaves this Mac")
     }
 
     private func attachLabel(_ symbol: String, _ title: String) -> some View {
