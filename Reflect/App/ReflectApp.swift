@@ -14,6 +14,12 @@ private func processStartDate() -> Date? {
 
 @main
 struct ReflectApp: App {
+    init() {
+        #if DEBUG
+        DebugSeed.runIfRequested()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             AppShell()

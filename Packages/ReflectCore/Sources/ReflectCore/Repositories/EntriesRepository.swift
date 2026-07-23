@@ -177,6 +177,36 @@ public struct EntriesRepository {
         }
     }
 
+    /// Mood per entry from the Reflection stage (empty until Phase 1 runs).
+    public func moodLabels(entryIds: [String]) throws -> [String: String] {
+        guard !entryIds.isEmpty else { return [:] }
+        return try db.reader.read { dbc in
+            let placeholders = databaseQuestionMarks(count: entryIds.count)
+            let rows = try Row.fetchAll(
+                dbc,
+                sql: """
+                    SELECT entry_id, mood_label FROM entry_reflection
+                    WHERE entry_id IN (\(placeholders)) AND mood_label IS NOT NULL
+                    """,
+                arguments: StatementArguments(entryIds))
+            return Dictionary(
+                uniqueKeysWithValues: rows.map { ($0["entry_id"] as String, $0["mood_label"] as String) })
+        }
+    }
+
+    /// Which of the given entries have at least one media row (Life glyphs).
+    public func entryIdsWithMedia(_ entryIds: [String]) throws -> Set<String> {
+        guard !entryIds.isEmpty else { return [] }
+        return try db.reader.read { dbc in
+            let placeholders = databaseQuestionMarks(count: entryIds.count)
+            let ids = try String.fetchAll(
+                dbc,
+                sql: "SELECT DISTINCT entry_id FROM media WHERE entry_id IN (\(placeholders))",
+                arguments: StatementArguments(entryIds))
+            return Set(ids)
+        }
+    }
+
     // MARK: - Search (FR-011)
 
     public struct SearchHit: Equatable {

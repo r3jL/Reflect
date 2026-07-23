@@ -224,6 +224,32 @@ final class ReflectCoreTests: XCTestCase {
             try repo.onThisDayCount(monthDay: "07-23", excludingDate: "2026-07-23"), 1)
     }
 
+    // MARK: - Life map sources (M4)
+
+    func testMoodLabelsAndMediaPresence() throws {
+        let entries = EntriesRepository(db)
+        let media = MediaRepository(db)
+        let a = try entries.createDraft(entryDate: "2026-07-01")
+        let b = try entries.createDraft(entryDate: "2026-07-02")
+
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: """
+                    INSERT INTO entry_reflection (entry_id, mood_label, created_at)
+                    VALUES (?, 'warm', ?)
+                    """,
+                arguments: [a.id, DBFormat.timestamp.string(from: .now)])
+        }
+        try media.insert(
+            entryId: b.id, filePath: "media/x.jpg", thumbnailPath: nil,
+            mediaType: .photo, mimeType: "image/jpeg", fileSizeBytes: 1)
+
+        let moods = try entries.moodLabels(entryIds: [a.id, b.id])
+        XCTAssertEqual(moods, [a.id: "warm"])
+        XCTAssertEqual(try entries.entryIdsWithMedia([a.id, b.id]), [b.id])
+        XCTAssertEqual(try entries.moodLabels(entryIds: []), [:])
+    }
+
     // MARK: - Formats
 
     func testEntryDateFormatting() {
