@@ -2,11 +2,76 @@
 // weeks so the Life map can be browsed before real history exists.
 // Idempotent via a UserDefaults marker; never compiled into Release.
 #if DEBUG
+import CoreGraphics
 import Foundation
+import ImageIO
 import ReflectCore
+import UniformTypeIdentifiers
 
 enum DebugSeed {
     static func runIfRequested() {
+        seedEntriesIfRequested()
+        seedMediaIfRequested()
+    }
+
+    /// REFLECT_SEED_MEDIA=1: run one generated photo through the real
+    /// import path (MediaStore + MediaRepository) onto today's entry.
+    private static func seedMediaIfRequested() {
+        guard ProcessInfo.processInfo.environment["REFLECT_SEED_MEDIA"] == "1",
+              !UserDefaults.standard.bool(forKey: "reflect.debug.mediaSeeded")
+        else { return }
+        Task {
+            do {
+                let temp = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("seed-photo-\(UUID().uuidString).jpg")
+                try makeJPEG(at: temp, width: 1600, height: 1000)
+                let entry = try AppServices.entries.fetchOrCreateForDate(
+                    DBFormat.entryDate(.now))
+                let imported = try await AppServices.mediaStore.importFile(from: temp)
+                _ = try AppServices.media.insert(
+                    entryId: entry.id,
+                    filePath: imported.relativePath,
+                    thumbnailPath: imported.thumbnailRelativePath,
+                    mediaType: .photo,
+                    mimeType: imported.mimeType,
+                    fileSizeBytes: imported.fileSizeBytes,
+                    width: imported.width,
+                    height: imported.height)
+                try? FileManager.default.removeItem(at: temp)
+                UserDefaults.standard.set(true, forKey: "reflect.debug.mediaSeeded")
+                print("DebugSeed: media seeded at \(imported.relativePath)")
+            } catch {
+                print("DebugSeed: media seed failed: \(error)")
+            }
+        }
+    }
+
+    private static func makeJPEG(at url: URL, width: Int, height: Int) throws {
+        guard let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue),
+            let destination = { () -> CGImageDestination? in
+                context.setFillColor(CGColor(red: 0.65, green: 0.42, blue: 0.27, alpha: 1))
+                context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+                context.setFillColor(CGColor(red: 0.97, green: 0.96, blue: 0.94, alpha: 1))
+                context.fill(CGRect(x: 0, y: 0, width: width / 2, height: height / 2))
+                guard let image = context.makeImage() else { return nil }
+                guard let dest = CGImageDestinationCreateWithURL(
+                    url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
+                else { return nil }
+                CGImageDestinationAddImage(dest, image, nil)
+                return dest
+            }()
+        else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        guard CGImageDestinationFinalize(destination) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+    }
+
+    private static func seedEntriesIfRequested() {
         guard ProcessInfo.processInfo.environment["REFLECT_SEED"] == "1",
               !UserDefaults.standard.bool(forKey: "reflect.debug.seeded")
         else { return }

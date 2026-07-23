@@ -5,11 +5,14 @@
 import Foundation
 import Observation
 import ReflectCore
+import ReflectMedia
 
 @Observable
 @MainActor
 final class TodayModel {
     private let repo: EntriesRepository
+    private let mediaRepo: MediaRepository
+    private let store: MediaStore
     private let calendar = Calendar.current
 
     private(set) var entry: Entry?
@@ -23,12 +26,19 @@ final class TodayModel {
     private(set) var onThisDay = 0
     private(set) var pendingJobs = false
     private(set) var lastWriteMs: Double?
+    private(set) var attachments: [Media] = []
 
     private var autosaveTask: Task<Void, Never>?
     private var persistedText = ""
 
-    init(repo: EntriesRepository = AppServices.entries) {
+    init(
+        repo: EntriesRepository = AppServices.entries,
+        mediaRepo: MediaRepository = AppServices.media,
+        store: MediaStore = AppServices.mediaStore
+    ) {
         self.repo = repo
+        self.mediaRepo = mediaRepo
+        self.store = store
     }
 
     var wordCount: Int { Entry.wordCount(of: text) }
@@ -48,9 +58,54 @@ final class TodayModel {
             weather = loaded.weather ?? ""
             refreshMarginMeta(now: now)
             refreshJobs()
+            refreshMedia()
         } catch {
             assertionFailure("Today load failed: \(error)")
         }
+    }
+
+    // MARK: - Media (FR-005/006/007)
+
+    func attach(fileURLs: [URL]) async {
+        guard let entry else { return }
+        for url in fileURLs {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let imported = try await store.importFile(from: url)
+                _ = try mediaRepo.insert(
+                    entryId: entry.id,
+                    filePath: imported.relativePath,
+                    thumbnailPath: imported.thumbnailRelativePath,
+                    mediaType: imported.kind == .photo ? .photo : .video,
+                    mimeType: imported.mimeType,
+                    fileSizeBytes: imported.fileSizeBytes,
+                    width: imported.width,
+                    height: imported.height,
+                    durationSeconds: imported.durationSeconds,
+                    sortOrder: attachments.count)
+            } catch {
+                #if DEBUG
+                print("attach failed for \(url.lastPathComponent): \(error)")
+                #endif
+            }
+        }
+        refreshMedia()
+    }
+
+    func removeAttachment(_ media: Media) {
+        do {
+            let paths = try mediaRepo.delete(id: media.id)
+            store.remove(relativePaths: paths)
+            refreshMedia()
+        } catch {
+            assertionFailure("media remove failed: \(error)")
+        }
+    }
+
+    private func refreshMedia() {
+        guard let entry else { return }
+        attachments = (try? mediaRepo.forEntry(entry.id)) ?? []
     }
 
     // MARK: - Autosave (AC-002)

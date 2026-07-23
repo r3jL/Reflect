@@ -12,6 +12,7 @@ struct EntryReadView: View {
     var onNext: () -> Void
 
     @State private var contentVisible = false
+    @State private var media: [Media] = []
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -30,6 +31,15 @@ struct EntryReadView: View {
                             .foregroundStyle(Theme.ink)
                             .lineSpacing(9)
                             .padding(.bottom, 26)
+                    }
+
+                    if !media.isEmpty {
+                        VStack(alignment: .leading, spacing: 30) {
+                            ForEach(media) { item in
+                                MediaFigure(media: item)
+                            }
+                        }
+                        .padding(.top, 14)
                     }
                 }
                 .frame(maxWidth: 660, alignment: .leading)
@@ -62,6 +72,9 @@ struct EntryReadView: View {
             withAnimation(.easeIn(duration: 0.4).delay(0.22)) {
                 contentVisible = true
             }
+        }
+        .task(id: entry.id) {
+            media = (try? AppServices.media.forEntry(entry.id)) ?? []
         }
     }
 

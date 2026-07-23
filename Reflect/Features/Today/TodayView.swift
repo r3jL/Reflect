@@ -3,12 +3,16 @@
 // pipeline. Responsive per the mockup: wide windows carry the living layer
 // in the page margins; narrow windows fold it into an inline section below
 // the writing. Marginalia content (echoes, observations) arrives in Phase 1.
+import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TodayView: View {
     @State private var model = TodayModel()
     @State private var isTyping = false
     @State private var idleTimer: Timer?
+    @State private var showFileImporter = false
+    @State private var pickedPhotos: [PhotosPickerItem] = []
 
     private var marginOpacity: Double { isTyping ? 0.25 : 1 }
 
@@ -87,11 +91,105 @@ struct TodayView: View {
             }
             .padding(.top, 44)
 
-            completeRow.padding(.top, 34)
+            if !model.attachments.isEmpty {
+                VStack(alignment: .leading, spacing: 26) {
+                    ForEach(model.attachments) { media in
+                        MediaFigure(media: media) {
+                            model.removeAttachment(media)
+                        }
+                    }
+                }
+                .padding(.top, 26)
+            }
+
+            HStack(spacing: 22) {
+                completeRow
+                attachButtons
+                Spacer()
+            }
+            .padding(.top, 34)
         }
         .frame(maxWidth: Theme.writingColumnWidth, alignment: .leading)
         .padding(.top, 120)
         .padding(.bottom, 60)
+        .onDrop(of: [UTType.fileURL], isTargeted: nil) { providers in
+            handleDrop(providers)
+        }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.image, .movie],
+            allowsMultipleSelection: true
+        ) { result in
+            if case .success(let urls) = result {
+                Task { await model.attach(fileURLs: urls) }
+            }
+        }
+        .onChange(of: pickedPhotos) { _, items in
+            guard !items.isEmpty else { return }
+            pickedPhotos = []
+            Task { await importPickedPhotos(items) }
+        }
+    }
+
+    /// Quiet attach affordances beside Complete: files + Photos library.
+    private var attachButtons: some View {
+        HStack(spacing: 16) {
+            Button(action: { showFileImporter = true }) {
+                attachLabel("photo.on.rectangle", "Add photo or video")
+            }
+            .buttonStyle(.plain)
+
+            PhotosPicker(
+                selection: $pickedPhotos,
+                matching: .any(of: [.images, .videos])
+            ) {
+                attachLabel("photo.stack", "From Photos")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func attachLabel(_ symbol: String, _ title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).font(.system(size: 11))
+            Text(title).font(Typography.sans(11)).tracking(0.4)
+        }
+        .foregroundStyle(Theme.ink3)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Attach plumbing
+
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        var handled = false
+        for provider in providers where provider.canLoadObject(ofClass: URL.self) {
+            handled = true
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url else { return }
+                Task { await model.attach(fileURLs: [url]) }
+            }
+        }
+        return handled
+    }
+
+    /// Photos-library items arrive as data; stage to temp files, then reuse
+    /// the standard import path.
+    private func importPickedPhotos(_ items: [PhotosPickerItem]) async {
+        var staged: [URL] = []
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self)
+            else { continue }
+            let type = item.supportedContentTypes.first
+            let ext = type?.preferredFilenameExtension ?? "jpg"
+            let temp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("photos-import-\(UUID().uuidString).\(ext)")
+            do {
+                try data.write(to: temp)
+                staged.append(temp)
+            } catch { continue }
+        }
+        await model.attach(fileURLs: staged)
+        for url in staged { try? FileManager.default.removeItem(at: url) }
     }
 
     /// Mood dot (hollow until reflection exists) · place · weather (FR-015).
