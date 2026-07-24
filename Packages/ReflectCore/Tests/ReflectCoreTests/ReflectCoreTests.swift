@@ -323,6 +323,60 @@ final class ReflectCoreTests: XCTestCase {
         XCTAssertNil(empty.costEstimate)
     }
 
+    // MARK: - Browse, actions, stats (M15)
+
+    func testBrowseActionsAndMonthStats() throws {
+        let repo = EntriesRepository(db)
+        let metadata = MetadataRepository(db)
+        let media = MediaRepository(db)
+
+        let a = try repo.createDraft(entryDate: "2026-07-01")
+        try repo.updateBody(id: a.id, title: nil, body: "studio day with Theo")
+        let b = try repo.createDraft(entryDate: "2026-07-02")
+        try repo.updateBody(id: b.id, title: nil, body: "quiet reading afternoon")
+        try media.insert(
+            entryId: a.id, filePath: "media/x.jpg", thumbnailPath: nil,
+            mediaType: .photo, mimeType: "image/jpeg", fileSizeBytes: 1)
+
+        try metadata.replaceExtraction(
+            entryId: a.id, themes: ["the studio"], tags: ["work"],
+            entities: [.init(name: "Theo", type: "person")],
+            actionItems: [.init(text: "order chairs", dueHint: nil)],
+            selfQuestions: [])
+        try metadata.replaceExtraction(
+            entryId: b.id, themes: ["the studio", "rest"], tags: ["books"],
+            entities: [], actionItems: [], selfQuestions: [])
+
+        // FR-027 browse
+        let themes = try metadata.topThemes()
+        XCTAssertEqual(themes.first?.name, "the studio")
+        XCTAssertEqual(themes.first?.count, 2)
+        XCTAssertEqual(
+            try metadata.entries(forTheme: "the studio").map(\.id), [b.id, a.id])
+        XCTAssertEqual(
+            try metadata.entries(forTheme: "rest").map(\.id), [b.id], "AC-027")
+        XCTAssertEqual(
+            try metadata.entries(forEntity: "Theo", type: "person").map(\.id), [a.id])
+
+        // Facet matching
+        XCTAssertEqual(
+            try metadata.entitiesMatching("the").map(\.name), ["Theo"])
+        XCTAssertEqual(try metadata.themesMatching("stud"), ["the studio"])
+
+        // FR-028 action items
+        var open = try metadata.openActionItems()
+        XCTAssertEqual(open.map(\.text), ["order chairs"])
+        try metadata.setActionStatus(id: open[0].id, status: "done")
+        open = try metadata.openActionItems()
+        XCTAssertTrue(open.isEmpty)
+
+        // Month stats
+        let stats = try repo.monthStats("2026-07")
+        XCTAssertEqual(stats.entryCount, 2)
+        XCTAssertEqual(stats.wordCount, 7)
+        XCTAssertEqual(stats.photoCount, 1)
+    }
+
     // MARK: - Formats
 
     func testEntryDateFormatting() {

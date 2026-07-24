@@ -135,21 +135,29 @@ plumbed and are now colored by real moods.
 M16). AI-off leaves Phase 0 behavior untouched (gates unchanged). Visual
 pass = human check.
 
-## M15 — Remember facets, hybrid retrieval & Insights browse (FR-026/027/028)
+## M15 — Remember facets, hybrid retrieval & Insights browse (FR-026/027/028) ✅ (2026-07-25)
 
-- **Remember:** facet groups from extraction (People / Places / Projects /
-  Books / Feelings via entities+themes) replacing month groups when facets
-  exist; **hybrid retrieval** — FTS5 keyword hits merged with vector top-k
-  of the query embedding (one cheap embed call per settled query, AI-on
-  only); the AI **lead sentence** (small reflection-model call, ~700ms
-  debounce, silent fallback to static leads offline).
-- **Insights:** real month stats (pages, streak, words, photos) with the
-  count-up animation; **theme & entity browse** (chips → filtered entry
-  list → morph-open, FR-027); **open action items** list with done/dropped
-  (FR-028) — mood-over-time stays expressed via Life washes + the future
-  P4 chapter (per §3.6 note).
-**Exit:** AC-026 (mood visible over time), AC-027 (theme filter), FR-028
-usable; Remember degrades gracefully with AI off.
+Shipped. **Remember** rebuilt around facets: entity matches group as
+People / Places / Projects / Books / Work, theme matches as Threads, FTS
+hits as "In your words" (keeping their FTS snippets), each entry deduped
+into its first facet, fixed display order. **Hybrid retrieval:** one query
+embedding per settled query (AI-on only) → KNN over stored vectors →
+"Feels related" group appended (distance ≤1.25, already-shown entries
+excluded); recorded in the ledger under stage `search`. **Lead sentence:**
+`SearchPrompts` (public, JSON `{"lead": …}`) via the reflection model on a
+700ms debounce with stale-query guards; static leads stand when AI is off
+or the call fails — search never blocks on the model. Suggestion chips now
+draw from top themes too. **Insights** rebuilt: centered chapter header
+(118pt month), count-up stat row with real numbers (pages / streak /
+words / photographs), **Threads** + **People & places** chip sections →
+filtered entry list overlay → read view (FR-027/AC-027 — repo-tested),
+**Still open** action list with quiet "done" / "let go" actions (FR-028),
+the Phase 4 essay slot held by the closing card. Repo layer: `topThemes`,
+`topEntities`, `entries(forTheme:/forEntity:)`, `entitiesMatching`,
+`themesMatching`, `openActionItems`, `setActionStatus`, `monthStats` —
+covered by a ReflectCore test (19/19 green; ReflectAI 34/34).
+**Result:** app builds and runs; AC-026 via Life washes, AC-027 via tested
+theme filter, FR-028 usable. Facet/lead/semantic visuals = human check.
 
 ## M16 — Cost guard, failure drills & Phase 1 exit
 

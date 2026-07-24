@@ -1,6 +1,31 @@
 // Stage prompts (spec §8 prompts/). Kept as Swift constants so they ship
 // inside the library and stay under test; the JSON shapes here are the
 // contract the Codable output types decode against.
+/// The Remember overlay's lead sentence (M15) — public because the app
+/// calls it directly (it is not a pipeline stage).
+public enum SearchPrompts {
+    public struct Lead: Decodable, Sendable {
+        public let lead: String
+    }
+
+    public static let system = """
+        You are Reflect, helping someone rediscover their own memories in \
+        their private journal. Given their search phrase and how many \
+        related memories exist, respond with ONE short, warm sentence that \
+        frames what they might be reaching for — as if gently helping them \
+        remember, not listing results. Under 18 words. Never clinical.
+
+        Return ONLY a JSON object: {"lead": "your sentence"}
+        """
+
+    public static func user(query: String, resultCount: Int) -> String {
+        """
+        They are searching for: "\(query)". \
+        They have \(resultCount) related memories.
+        """
+    }
+}
+
 enum Prompts {
     static let extractionSystem = """
         You are the extraction layer of Reflect, a private journaling app. \

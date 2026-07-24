@@ -212,6 +212,11 @@ public struct EntriesRepository {
     public struct SearchHit: Equatable {
         public let entry: Entry
         public let snippet: String
+
+        public init(entry: Entry, snippet: String) {
+            self.entry = entry
+            self.snippet = snippet
+        }
     }
 
     /// FTS5 keyword search over title/body, trash excluded, offline (AC-009).
@@ -235,6 +240,44 @@ public struct EntriesRepository {
                     entry: try Entry(row: row),
                     snippet: row["snippet"] ?? "")
             }
+        }
+    }
+
+    /// Insights month stats (M15): pages, words, photos.
+    public struct MonthStats: Equatable, Sendable {
+        public let entryCount: Int
+        public let wordCount: Int
+        public let photoCount: Int
+
+        public init(entryCount: Int, wordCount: Int, photoCount: Int) {
+            self.entryCount = entryCount
+            self.wordCount = wordCount
+            self.photoCount = photoCount
+        }
+    }
+
+    public func monthStats(_ yearMonth: String) throws -> MonthStats {
+        try db.reader.read { dbc in
+            let row = try Row.fetchOne(
+                dbc,
+                sql: """
+                    SELECT COUNT(*) AS n, COALESCE(SUM(word_count), 0) AS words
+                    FROM entries
+                    WHERE entry_date LIKE ? || '%' AND is_deleted = 0
+                    """,
+                arguments: [yearMonth])
+            let photos = try Int.fetchOne(
+                dbc,
+                sql: """
+                    SELECT COUNT(*) FROM media m
+                    JOIN entries e ON e.id = m.entry_id
+                    WHERE e.entry_date LIKE ? || '%' AND e.is_deleted = 0
+                    """,
+                arguments: [yearMonth]) ?? 0
+            return MonthStats(
+                entryCount: row?["n"] ?? 0,
+                wordCount: row?["words"] ?? 0,
+                photoCount: photos)
         }
     }
 

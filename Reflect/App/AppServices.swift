@@ -41,10 +41,21 @@ enum AppServices {
             && KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount) != nil
     }
 
+    /// Shared cloud adapter — pipeline stages and the Remember overlay's
+    /// lead/semantic calls all go through here.
+    static let aiProvider = OpenRouterProvider(keyProvider: {
+        KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount)
+    })
+
+    /// The embeddings model id OpenRouter expects (settings hold the
+    /// canonical name).
+    static var embeddingModelId: String {
+        let raw = (try? settings.get(.modelEmbedding)) ?? "bge-m3"
+        return raw == "bge-m3" ? "baai/bge-m3" : raw
+    }
+
     static let orchestrator: PipelineOrchestrator = {
-        let provider = OpenRouterProvider(keyProvider: {
-            KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount)
-        })
+        let provider = aiProvider
         let runners: [PipelineJob.Stage: any PipelineStageRunner] = [
             .extraction: ExtractionStage(
                 db: database, provider: provider,
@@ -60,12 +71,7 @@ enum AppServices {
                 }),
             .embedding: EmbeddingStage(
                 db: database, provider: provider,
-                model: {
-                    // Canonical name in settings; OpenRouter wants the
-                    // namespaced id.
-                    let raw = (try? settings.get(.modelEmbedding)) ?? "bge-m3"
-                    return raw == "bge-m3" ? "baai/bge-m3" : raw
-                }),
+                model: { embeddingModelId }),
         ]
         let orchestrator = PipelineOrchestrator(
             db: database,

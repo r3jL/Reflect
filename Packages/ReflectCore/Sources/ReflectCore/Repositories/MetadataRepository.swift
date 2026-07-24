@@ -263,6 +263,138 @@ public struct MetadataRepository {
         }
     }
 
+    // MARK: - Browse (FR-027) & search facets (M15)
+
+    public func topThemes(limit: Int = 14) throws -> [(name: String, count: Int)] {
+        try db.reader.read { dbc in
+            let rows = try Row.fetchAll(
+                dbc,
+                sql: """
+                    SELECT t.name, COUNT(et.entry_id) AS n
+                    FROM themes t
+                    JOIN entry_themes et ON et.theme_id = t.id
+                    JOIN entries e ON e.id = et.entry_id AND e.is_deleted = 0
+                    GROUP BY t.id ORDER BY n DESC, t.name LIMIT ?
+                    """,
+                arguments: [limit])
+            return rows.map { ($0["name"], $0["n"]) }
+        }
+    }
+
+    public func topEntities(limit: Int = 14) throws -> [(entity: EntityRef, count: Int)] {
+        try db.reader.read { dbc in
+            let rows = try Row.fetchAll(
+                dbc,
+                sql: """
+                    SELECT en.name, en.type, COUNT(ee.entry_id) AS n
+                    FROM entities en
+                    JOIN entry_entities ee ON ee.entity_id = en.id
+                    JOIN entries e ON e.id = ee.entry_id AND e.is_deleted = 0
+                    GROUP BY en.id ORDER BY n DESC, en.name LIMIT ?
+                    """,
+                arguments: [limit])
+            return rows.map {
+                (EntityRef(name: $0["name"], type: $0["type"]), $0["n"])
+            }
+        }
+    }
+
+    /// AC-027: only entries linked to the theme, newest first.
+    public func entries(forTheme name: String) throws -> [Entry] {
+        try db.reader.read { dbc in
+            try Entry.fetchAll(
+                dbc,
+                sql: """
+                    SELECT e.* FROM entries e
+                    JOIN entry_themes et ON et.entry_id = e.id
+                    JOIN themes t ON t.id = et.theme_id
+                    WHERE t.name = ? AND e.is_deleted = 0
+                    ORDER BY e.entry_date DESC
+                    """,
+                arguments: [name])
+        }
+    }
+
+    public func entries(forEntity name: String, type: String) throws -> [Entry] {
+        try db.reader.read { dbc in
+            try Entry.fetchAll(
+                dbc,
+                sql: """
+                    SELECT e.* FROM entries e
+                    JOIN entry_entities ee ON ee.entry_id = e.id
+                    JOIN entities en ON en.id = ee.entity_id
+                    WHERE en.name = ? AND en.type = ? AND e.is_deleted = 0
+                    ORDER BY e.entry_date DESC
+                    """,
+                arguments: [name, type])
+        }
+    }
+
+    public func entitiesMatching(_ query: String, limit: Int = 8) throws -> [EntityRef] {
+        let needle = "%\(query.trimmingCharacters(in: .whitespaces))%"
+        return try db.reader.read { dbc in
+            let rows = try Row.fetchAll(
+                dbc,
+                sql: """
+                    SELECT DISTINCT name, type FROM entities
+                    WHERE name LIKE ? ORDER BY name LIMIT ?
+                    """,
+                arguments: [needle, limit])
+            return rows.map { EntityRef(name: $0["name"], type: $0["type"]) }
+        }
+    }
+
+    public func themesMatching(_ query: String, limit: Int = 8) throws -> [String] {
+        let needle = "%\(MetadataRepository.canonical(query))%"
+        return try db.reader.read { dbc in
+            try String.fetchAll(
+                dbc,
+                sql: "SELECT name FROM themes WHERE name LIKE ? ORDER BY name LIMIT ?",
+                arguments: [needle, limit])
+        }
+    }
+
+    // MARK: - Action items (FR-028)
+
+    public struct OpenAction: Equatable, Sendable, Identifiable {
+        public let id: String
+        public let entryId: String
+        public let entryDate: String
+        public let text: String
+        public let dueHint: String?
+    }
+
+    public func openActionItems(limit: Int = 60) throws -> [OpenAction] {
+        try db.reader.read { dbc in
+            let rows = try Row.fetchAll(
+                dbc,
+                sql: """
+                    SELECT a.id, a.entry_id, a.text, a.due_hint, e.entry_date
+                    FROM action_items a
+                    JOIN entries e ON e.id = a.entry_id AND e.is_deleted = 0
+                    WHERE a.status = 'open'
+                    ORDER BY e.entry_date DESC, a.rowid LIMIT ?
+                    """,
+                arguments: [limit])
+            return rows.map {
+                OpenAction(
+                    id: $0["id"], entryId: $0["entry_id"],
+                    entryDate: $0["entry_date"], text: $0["text"],
+                    dueHint: $0["due_hint"])
+            }
+        }
+    }
+
+    /// FR-028: mark done or dropped.
+    public func setActionStatus(id: String, status: String) throws {
+        guard ["open", "done", "dropped"].contains(status) else { return }
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: "UPDATE action_items SET status = ? WHERE id = ?",
+                arguments: [status, id])
+        }
+    }
+
     // MARK: - Helpers
 
     static func canonical(_ raw: String) -> String {
