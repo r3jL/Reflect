@@ -16,8 +16,15 @@ final class SettingsModel {
 
     var keyDraft = ""
     private(set) var keyStored = false
+    private(set) var monthCalls = 0
+    private(set) var monthCost: Double?
 
     func load() {
+        let month = String(DBFormat.entryDate(.now).prefix(7))
+        if let total = try? AppServices.usage.monthTotal(month) {
+            monthCalls = total.calls
+            monthCost = total.costEstimate
+        }
         aiEnabled = (try? settings.getBool(.aiEnabled)) ?? false
         extractionModel =
             (try? settings.get(.modelExtraction)) ?? "google/gemini-2.5-flash"
@@ -108,6 +115,23 @@ struct SettingsView: View {
                         .font(Typography.sans(12))
                         .foregroundStyle(Theme.ink4)
                 }
+            }
+
+            section("This month") {
+                HStack(spacing: 8) {
+                    Text("\(model.monthCalls) AI calls")
+                        .font(Typography.sans(12))
+                        .foregroundStyle(Theme.ink2)
+                    Circle().fill(Theme.ink4).frame(width: 3, height: 3)
+                    Text(model.monthCost.map {
+                        String(format: "≈ $%.4f", $0)
+                    } ?? "≈ $0")
+                        .font(Typography.sans(12))
+                        .foregroundStyle(Theme.ink2)
+                }
+                Text("Local estimate from token counts; your OpenRouter dashboard is the billing truth.")
+                    .font(Typography.sans(11))
+                    .foregroundStyle(Theme.ink4)
             }
 
             section("Voice") {

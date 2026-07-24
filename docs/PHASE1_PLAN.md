@@ -159,16 +159,34 @@ covered by a ReflectCore test (19/19 green; ReflectAI 34/34).
 **Result:** app builds and runs; AC-026 via Life washes, AC-027 via tested
 theme filter, FR-028 usable. Facet/lead/semantic visuals = human check.
 
-## M16 — Cost guard, failure drills & Phase 1 exit
+## M16 — Cost guard, failure drills & Phase 1 exit ✅ (2026-07-25) → `v0.2.0-phase1`
 
-Settings gains a quiet **spend line** (this month's estimated cost from
-`ai_usage`; AC-030 sanity: ~60 entries ≈ $0.40–0.50). Failure-injection
-sweep (auth revoked, rate-limited, network drop mid-stage, malformed JSON,
-provider 500s) — every path ends in null+warning+retryable, never fabricated
-rows, never a blocked UI. Offline month: complete entries offline → jobs
-drain correctly on reconnect (AC-025 live). Full AC-020…AC-031 pass; KPI-07
-P95 re-measured on a real week of entries; docs updated.
-**Exit:** tag **`v0.2.0-phase1`** — the MVP as specced (Phase 0 + 1).
+**Spend line:** Settings' "This month" section reads the `ai_usage` ledger
+(calls · estimated $; "your OpenRouter dashboard is the billing truth").
+**Failure drill** (`FailureDrillTests` — full orchestrator + real stages +
+scripted provider, 5 scenarios): auth revoked (terminal on attempt 1, zero
+rows, zero ledger, reflection cascaded), malformed output (schema-terminal,
+embedding unaffected), rate-limited→recovers (attempts=2), network drop
+mid-pipeline (reflection recovers on attempt 3), provider 500s exhaust
+budget → **manual re-run against a healthy provider heals everything**.
+Echo threshold check: live distances 0.67–0.89 vs 1.2 ceiling — kept.
+
+**AC-020…031:** ordering (test+claim SQL) · extraction rows (transcripts+
+live) · reflection row w/ ranges (tests+live) · embedding rows (tests+live)
+· null-plus-warning (drills+UI) · offline drain (gate/reconnect tests; a
+true airplane-mode pass remains a human check) · mood over time (Life
+washes + Insights) · theme filter (repo test + browse UI) · voice local
+(M8, 3.46s) · vector provenance per row (schema+tests) · **cost: $0.0611
+for the whole dev month, 57 calls — ~60 entries/mo projects to ≈$0.20,
+25× under the $5 ceiling** · manual re-run (drill + listen-again/try-again).
+
+**KPI-07 re-measured: 13s** complete→enriched incl. cold start (<15s ✅).
+Final live census: **54/54 jobs success** across 18 entries. ReflectAI
+39/39, ReflectCore 19/19, ReflectMedia 4/4, ReflectSTT 2/2.
+
+**Phase 1 complete — the MVP as specced (Phase 0 + 1) ships as
+`v0.2.0-phase1`.** Next: Phase 2 (hybrid chat, local LLM adapter) when
+the appetite arrives; CLR-01 still gates Phase 3.
 
 ---
 
