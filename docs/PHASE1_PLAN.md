@@ -87,19 +87,29 @@ extracted via Gemini 2.5 Flash** — sensible themes/tags in the container
 DB, ledger shows 12-call sample at 4,881 prompt + 548 completion tokens ≈
 **$0.0028** (AC-030 tracking well under budget).
 
-## M13 — Reflection + Embedding stages (FR-022, 023, 030)
+## M13 — Reflection + Embedding stages (FR-022, 023, 030) ✅ (2026-07-24)
 
-**Reflection** (`prompts/reflection.md`): consumes the entry + extraction
-output; writes the single `entry_reflection` row — summary, mood
-(bright/warm/calm/quiet per §3.6), `mood_confidence` [0,1],
-`sentiment_score` [-1,1] (range-validated — out-of-range = schema failure,
-AC-022), energy, and the entry-local `reflection_note` that becomes
-"Reflect noticed". **Embedding:** ~1k-token chunking for long entries,
-bge-m3 @1024 via the adapter, versioned writes to `embeddings_meta` +
-`vec_entries` (AC-023; FR-030 columns already enforced by schema).
-**KPI-07 harness:** measure complete→all-stages-done, P95 <15s.
-**Exit:** AC-022/023 green on transcripts; live smoke turns a real entry's
-mood dot colored; KPI-07 measured.
+Shipped: `Prompts.reflectionSystem` (4-mood vocabulary with meanings, the
+"Reflect noticed" voice: one sentence, <25 words, no advice/questions;
+versioned `p1` into `model_version`), `ReflectionStage` (consumes
+extraction context — themes/tags/entities in the prompt, verified by test;
+**range/vocabulary validation beyond decoding**: unknown mood/energy or
+out-of-range confidence/sentiment = `.schema` failure, no clamping, no row
+— AC-022/024), `replaceReflection` upsert. `EmbeddingStage`:
+paragraph-aware greedy chunking (≤3500 chars, mid-paragraph split only
+when forced), dim validation (≠1024 = schema failure, nothing written),
+`EmbeddingsRepository` versioned replace + `firstChunkVector` +
+`nearestEntries` KNN (entry-deduped, self-excluding — M14's echo query,
+ready). Canonical model name `bge-m3` stored; provider id
+(`baai/bge-m3`) in `model_version`. Full-pipeline integration test
+(orchestrator + all three canned stages → enriched entry + 3 ledger rows).
+**Result:** ReflectAI **34/34**. Live: **45/45 jobs success** across 15
+entries — moods 12 calm/3 quiet, 15×1024 vectors, reflection notes in
+exactly the design's voice. One data cleanup (stale attempt counts from
+the pre-fix M12 era). **KPI-07 measured: fresh entry complete→fully
+enriched in 11s** including app cold start (<15s budget ✅). Spend to
+date: extraction $0.0035 + reflection $0.0431 + embeddings ~$0 ≈
+**$0.047** (AC-030 on track).
 
 ## M14 — The margins come alive (Today / Life / Entry UI)
 

@@ -39,4 +39,59 @@ enum Prompts {
         text += body
         return "Journal entry:\n\n\(text)"
     }
+
+    /// Bump when the reflection prompt changes — stored as model_version
+    /// provenance on entry_reflection rows.
+    static let reflectionPromptVersion = "p1"
+
+    static let reflectionSystem = """
+        You are the reflection layer of Reflect, a private journaling app. \
+        You read ONE journal entry (with extracted context) and produce a \
+        quiet, warm reflection on it — as if gently remembering alongside \
+        the writer.
+
+        Return ONLY a JSON object with exactly this shape:
+        {
+          "summary": "1-2 plain sentences in the writer's register",
+          "mood": {"label": "bright|warm|calm|quiet", "confidence": 0.0},
+          "sentiment_score": 0.0,
+          "energy": "low|medium|high",
+          "reflection_note": "one gentle sentence"
+        }
+
+        Rules:
+        - mood.label vocabulary: "bright" = light, joyful, energized; \
+        "warm" = tender, connected, grateful; "calm" = settled, steady, \
+        clear; "quiet" = low, heavy, muted, tired. Choose the closest fit.
+        - mood.confidence is 0.0-1.0; sentiment_score is -1.0 (bleak) to \
+        1.0 (glowing).
+        - reflection_note: ONE sentence, under 25 words, noticing a \
+        feeling or pattern inside THIS entry only. Warm, observant, \
+        unhurried, human. No advice, no questions, never clinical, never \
+        a summary.
+        - Ground everything in the entry. Never invent events.
+        - No prose outside the JSON, no code fences.
+        """
+
+    static func reflectionUser(
+        title: String?, body: String,
+        themes: [String], tags: [String], entityNames: [String]
+    ) -> String {
+        var text = ""
+        if let title, !title.isEmpty {
+            text += "Title: \(title)\n\n"
+        }
+        text += body
+        var context = ""
+        if !themes.isEmpty {
+            context += "\nExtracted themes: \(themes.joined(separator: ", "))"
+        }
+        if !tags.isEmpty {
+            context += "\nExtracted tags: \(tags.joined(separator: ", "))"
+        }
+        if !entityNames.isEmpty {
+            context += "\nMentioned: \(entityNames.joined(separator: ", "))"
+        }
+        return "Journal entry:\n\n\(text)\n\(context)"
+    }
 }

@@ -170,6 +170,7 @@ final class CannedProvider: AiProvider, @unchecked Sendable {
     let error: Error?
     let usage: AiUsage
     let lastUser = Box<String>()
+    var embedDim = 1024
 
     init(
         chatJSON: String? = nil,
@@ -194,7 +195,7 @@ final class CannedProvider: AiProvider, @unchecked Sendable {
 
     func embed(model: String, texts: [String]) async throws -> ([[Float]], AiUsage) {
         if let error { throw error }
-        return (texts.map { _ in [Float](repeating: 0.1, count: 1024) }, usage)
+        return (texts.map { _ in [Float](repeating: 0.1, count: embedDim) }, usage)
     }
 }
 

@@ -124,6 +124,76 @@ public struct MetadataRepository {
         }
     }
 
+    // MARK: - Reflection write (FR-022)
+
+    public struct Reflection: Equatable, Sendable {
+        public let summary: String
+        public let moodLabel: String
+        public let moodConfidence: Double
+        public let sentimentScore: Double
+        public let energy: String
+        public let reflectionNote: String
+        public let model: String?
+
+        public init(
+            summary: String, moodLabel: String, moodConfidence: Double,
+            sentimentScore: Double, energy: String, reflectionNote: String,
+            model: String? = nil
+        ) {
+            self.summary = summary
+            self.moodLabel = moodLabel
+            self.moodConfidence = moodConfidence
+            self.sentimentScore = sentimentScore
+            self.energy = energy
+            self.reflectionNote = reflectionNote
+            self.model = model
+        }
+    }
+
+    /// 1:1 with the entry; superseded wholesale on re-run (AC-005/AC-022).
+    public func replaceReflection(
+        entryId: String,
+        _ reflection: Reflection,
+        modelVersion: String,
+        now: Date = .now
+    ) throws {
+        try db.writer.write { dbc in
+            try dbc.execute(
+                sql: """
+                    INSERT OR REPLACE INTO entry_reflection
+                        (entry_id, summary, mood_label, mood_confidence,
+                         sentiment_score, energy, reflection_note, model,
+                         model_version, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                arguments: [
+                    entryId, reflection.summary, reflection.moodLabel,
+                    reflection.moodConfidence, reflection.sentimentScore,
+                    reflection.energy, reflection.reflectionNote,
+                    reflection.model, modelVersion,
+                    DBFormat.timestamp.string(from: now),
+                ])
+        }
+    }
+
+    public func reflection(entryId: String) throws -> Reflection? {
+        try db.reader.read { dbc in
+            guard let row = try Row.fetchOne(
+                dbc,
+                sql: "SELECT * FROM entry_reflection WHERE entry_id = ?",
+                arguments: [entryId])
+            else { return nil }
+            return Reflection(
+                summary: row["summary"] ?? "",
+                moodLabel: row["mood_label"] ?? "",
+                moodConfidence: row["mood_confidence"] ?? 0,
+                sentimentScore: row["sentiment_score"] ?? 0,
+                energy: row["energy"] ?? "",
+                reflectionNote: row["reflection_note"] ?? "",
+                model: row["model"])
+        }
+    }
+
     // MARK: - Reads
 
     public func themes(entryId: String) throws -> [String] {

@@ -51,8 +51,21 @@ enum AppServices {
                 model: {
                     (try? settings.get(.modelExtraction))
                         ?? "google/gemini-2.5-flash"
-                })
-            // .reflection and .embedding register in M13.
+                }),
+            .reflection: ReflectionStage(
+                db: database, provider: provider,
+                model: {
+                    (try? settings.get(.modelReflection))
+                        ?? "anthropic/claude-sonnet-4.6"
+                }),
+            .embedding: EmbeddingStage(
+                db: database, provider: provider,
+                model: {
+                    // Canonical name in settings; OpenRouter wants the
+                    // namespaced id.
+                    let raw = (try? settings.get(.modelEmbedding)) ?? "bge-m3"
+                    return raw == "bge-m3" ? "baai/bge-m3" : raw
+                }),
         ]
         let orchestrator = PipelineOrchestrator(
             db: database,
