@@ -32,7 +32,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rejul.reflect
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        CODE_SIGN_IDENTITY: "-"
+        # Stable identity so keychain "Always Allow" survives rebuilds
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: CGL7B3QX8Q
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_ENTITLEMENTS: Reflect/Reflect.entitlements
         ENABLE_HARDENED_RUNTIME: NO
