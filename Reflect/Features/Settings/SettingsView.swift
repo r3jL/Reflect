@@ -25,7 +25,7 @@ final class SettingsModel {
             (try? settings.get(.modelReflection)) ?? "anthropic/claude-sonnet-4.6"
         sttModel = (try? settings.get(.sttModel)) ?? "large-v3-turbo"
         appLock = (try? settings.getBool(.appLock)) ?? false
-        keyStored = KeychainStore.get(account: KeychainStore.openRouterKeyAccount) != nil
+        keyStored = KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount) != nil
     }
 
     func persist() {

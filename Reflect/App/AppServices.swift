@@ -38,12 +38,12 @@ enum AppServices {
     /// simply stay pending.
     static var aiIsConfigured: Bool {
         ((try? settings.getBool(.aiEnabled)) ?? false)
-            && KeychainStore.get(account: KeychainStore.openRouterKeyAccount) != nil
+            && KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount) != nil
     }
 
     static let orchestrator: PipelineOrchestrator = {
         let provider = OpenRouterProvider(keyProvider: {
-            KeychainStore.get(account: KeychainStore.openRouterKeyAccount)
+            KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount)
         })
         let runners: [PipelineJob.Stage: any PipelineStageRunner] = [
             .extraction: ExtractionStage(
