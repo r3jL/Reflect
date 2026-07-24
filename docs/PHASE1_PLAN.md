@@ -111,26 +111,29 @@ enriched in 11s** including app cold start (<15s budget ✅). Spend to
 date: extraction $0.0035 + reflection $0.0431 + embeddings ~$0 ≈
 **$0.047** (AC-030 on track).
 
-## M14 — The margins come alive (Today / Life / Entry UI)
+## M14 — The margins come alive (Today / Life / Entry UI) ✅ (2026-07-24)
 
-- **"Reflect noticed"** (right margin, italic serif): shows
-  `reflection_note`; **"listen again"** = manual reflection re-run with the
-  breathing-dot "listening…" state (design behavior).
-- **Memory echoes** (left margin + entry read view): top-k vector neighbors
-  of this entry over *past* entries (excluding same-day), rendered as
-  italic snippet + "when" line. Echo retrieval is **local-only** (stored
-  vectors; no per-keystroke API calls) — refreshed on load and after the
-  embedding job lands. *(DEC-P1-01: live-while-typing echoes would need
-  draft embedding on idle — deferred until cost data says it's fine.)*
-- Mood dot fills on Today's meta row; Life washes/bars go mood-colored
-  (already plumbed — verify live); entry read view gains mood chip +
-  summary + echo block.
-- **Failure surfaces (AC-024):** completed entries with a `failed` stage
-  show a quiet, non-blocking warning line with a "try again" affordance
-  (FR-031); "AI pending" clears as stages succeed.
-**Exit:** with a live key, completing an entry visibly enriches it within
-seconds; failures show the warning + re-run; AI-off leaves Phase 0 behavior
-untouched.
+Shipped: `EchoService` — local-only retrieval (stored first-chunk vector →
+`nearestEntries` KNN → past-entries-only filter → distance ceiling 1.2,
+weak matches hidden), sentence-aware snippets, the design's when-language
+("3 weeks ago" / "July 2025" / "a year ago this week"). `TodayModel` grew
+the living layer: reflection + echoes + failed-job awareness, a 2s poll
+that runs only while work is in flight and surfaces results the moment
+jobs land, **"listen again"** (reflection-only re-run with the breathing
+"listening…" state) and **"try again"** (full re-run, FR-031). `TodayView`:
+echo blocks in the left margin (breathing accent-soft dot + italic serif +
+when line), "Reflect noticed" in the right margin above the hairline+meta
+stack, mood dot fills with the 4-mood color, the AC-024 warning row
+("Reflect hit a snag with this entry · try again") replacing "AI pending"
+on failure; the narrow inline layer carries all of it too. `EntryReadView`:
+loads its own reflection (mood chip from fresh data) + a left-bordered
+memory-echo block after the body, per the mockup. Life washes were already
+plumbed and are now colored by real moods.
+**Result:** end-to-end live — today's entry completed → 3/3 stages → mood
+`calm`, a genuinely good note, and **two echoes at distances 0.672/0.890**
+(probe confirms the threshold has sensible headroom; final calibration in
+M16). AI-off leaves Phase 0 behavior untouched (gates unchanged). Visual
+pass = human check.
 
 ## M15 — Remember facets, hybrid retrieval & Insights browse (FR-026/027/028)
 

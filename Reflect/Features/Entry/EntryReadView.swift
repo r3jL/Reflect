@@ -14,6 +14,8 @@ struct EntryReadView: View {
 
     @State private var contentVisible = false
     @State private var media: [Media] = []
+    @State private var reflection: MetadataRepository.Reflection?
+    @State private var echoes: [Echo] = []
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -41,6 +43,31 @@ struct EntryReadView: View {
                             }
                         }
                         .padding(.top, 14)
+                    }
+
+                    if let firstEcho = echoes.first {
+                        VStack(alignment: .leading, spacing: 9) {
+                            HStack(spacing: 7) {
+                                Circle().fill(Theme.accentSoft)
+                                    .frame(width: 5, height: 5)
+                                Text("Memory echo".uppercased())
+                                    .font(Typography.sans(10))
+                                    .tracking(1.6)
+                            }
+                            .foregroundStyle(Theme.accentSoft)
+                            Text(firstEcho.text)
+                                .font(Typography.serifItalic(18))
+                                .foregroundStyle(Theme.ink2)
+                                .lineSpacing(5)
+                            Text(firstEcho.when)
+                                .font(Typography.sans(11))
+                                .foregroundStyle(Theme.ink4)
+                        }
+                        .padding(.leading, 22)
+                        .overlay(alignment: .leading) {
+                            Rectangle().fill(Theme.accentSoft).frame(width: 2)
+                        }
+                        .padding(.top, 44)
                     }
 
                     if let onTrash {
@@ -93,17 +120,25 @@ struct EntryReadView: View {
         }
         .task(id: entry.id) {
             media = (try? AppServices.media.forEntry(entry.id)) ?? []
+            reflection = try? AppServices.metadata.reflection(entryId: entry.id)
+            echoes = EchoService.echoes(for: entry, limit: 1)
         }
     }
 
     // MARK: - Pieces
 
+    /// Prefer the freshly loaded reflection; fall back to the mood the
+    /// caller passed (Life map's cached label).
+    private var displayMood: Theme.Mood? {
+        reflection.flatMap { Theme.Mood(rawValue: $0.moodLabel) } ?? mood
+    }
+
     private var metaRow: some View {
         HStack(spacing: 14) {
             HStack(spacing: 7) {
-                if let mood {
-                    Circle().fill(mood.dot).frame(width: 8, height: 8)
-                    Text(mood.rawValue)
+                if let displayMood {
+                    Circle().fill(displayMood.dot).frame(width: 8, height: 8)
+                    Text(displayMood.rawValue)
                 } else {
                     Circle().stroke(Theme.ink4, lineWidth: 1.5)
                         .frame(width: 8, height: 8)

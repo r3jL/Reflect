@@ -25,12 +25,18 @@ struct TodayView: View {
                 if wide {
                     HStack(alignment: .top, spacing: 0) {
                         marginColumn {
-                            // Memory echoes appear here (Phase 1).
-                            EmptyView()
+                            ForEach(model.echoes) { echo in
+                                echoBlock(echo)
+                            }
                         }
                         centerColumn
                             .layoutPriority(1)
                         marginColumn {
+                            reflectNoticedBlock
+                            if model.reflection != nil {
+                                Rectangle().fill(Theme.hair)
+                                    .frame(width: 44, height: 1)
+                            }
                             marginMetaBlocks
                         }
                     }
@@ -229,12 +235,19 @@ struct TodayView: View {
         for url in staged { try? FileManager.default.removeItem(at: url) }
     }
 
-    /// Mood dot (hollow until reflection exists) · place · weather (FR-015).
+    /// Mood dot (fills once Reflection runs) · place · weather (FR-015).
     private var metaRow: some View {
         HStack(spacing: 14) {
-            Circle()
-                .stroke(Theme.ink4, lineWidth: 1.5)
-                .frame(width: 8, height: 8)
+            HStack(spacing: 7) {
+                if let mood = model.mood {
+                    Circle().fill(mood.dot).frame(width: 8, height: 8)
+                    Text(mood.rawValue)
+                } else {
+                    Circle()
+                        .stroke(Theme.ink4, lineWidth: 1.5)
+                        .frame(width: 8, height: 8)
+                }
+            }
 
             dotSeparator
             contextField("Add place", text: $model.place)
@@ -284,7 +297,73 @@ struct TodayView: View {
                             .font(Typography.sans(11))
                             .foregroundStyle(Theme.ink4)
                     }
+                } else if model.hasFailedJobs {
+                    // AC-024: non-blocking warning + re-run (FR-031).
+                    HStack(spacing: 8) {
+                        Text("Reflect hit a snag with this entry.")
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.ink4)
+                        Button(action: { model.tryAgain() }) {
+                            Text("try again")
+                                .font(Typography.sans(11))
+                                .foregroundStyle(Theme.accent)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+            }
+        }
+    }
+
+    // MARK: - Marginalia (M14)
+
+    private func echoBlock(_ echo: Echo) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                BreathingDot(color: Theme.accentSoft)
+                Text("Memory echo".uppercased())
+                    .font(Typography.sans(10))
+                    .tracking(1.6)
+            }
+            .foregroundStyle(Theme.accentSoft)
+            Text(echo.text)
+                .font(Typography.serifItalic(16))
+                .foregroundStyle(Theme.ink2)
+                .lineSpacing(4)
+            Text(echo.when)
+                .font(Typography.sans(11))
+                .foregroundStyle(Theme.ink4)
+        }
+    }
+
+    @ViewBuilder
+    private var reflectNoticedBlock: some View {
+        if let reflection = model.reflection, !reflection.reflectionNote.isEmpty {
+            VStack(alignment: .leading, spacing: 9) {
+                Kicker(text: "Reflect noticed")
+                Text(reflection.reflectionNote)
+                    .font(Typography.serifItalic(17))
+                    .foregroundStyle(Theme.ink2)
+                    .lineSpacing(5)
+                Button(action: { model.listenAgain() }) {
+                    HStack(spacing: 6) {
+                        if model.listening {
+                            BreathingDot(color: Theme.accent)
+                        } else {
+                            Circle().fill(Theme.accent)
+                                .frame(width: 5, height: 5)
+                        }
+                        Text(model.listening ? "listening…" : "listen again")
+                            .font(Typography.sans(11))
+                            .tracking(0.4)
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(model.listening)
+                .padding(.top, 3)
             }
         }
     }
@@ -317,6 +396,14 @@ struct TodayView: View {
     private var inlineLivingLayer: some View {
         VStack(alignment: .leading, spacing: 30) {
             Rectangle().fill(Theme.hair).frame(height: 1)
+            reflectNoticedBlock
+            if !model.echoes.isEmpty {
+                HStack(alignment: .top, spacing: 34) {
+                    ForEach(model.echoes) { echo in
+                        echoBlock(echo).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
             HStack(alignment: .top, spacing: 34) {
                 marginMetaBlocks
                 Spacer()
