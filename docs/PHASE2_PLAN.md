@@ -36,19 +36,25 @@
 CLR-01), monthly chapters (P4), chat history persistence, streaming,
 AI on media.
 
-## M17 — Retrieval context builder (the RAG core)
+## M17 — Retrieval context builder (the RAG core) ✅ (2026-07-25)
 
-`JournalRetriever` in ReflectAI: question → one query embedding → KNN over
-current vectors + FTS5 keyword hits → merged, deduped, recency-tiebroken
-ranking → a **token-budgeted context pack**: for each cited entry, its
-date, body (or chunk), mood/summary when present, and a stable citation
-id. Deterministic given the same stores; distance floor reuses the echo
-discipline (weak context is dropped, not padded). Also: a "nothing
-relevant" verdict when the best match is beyond the floor — the honesty
-signal M18's prompt depends on.
-**Exit:** unit tests with canned vectors/FTS fixtures prove merge order,
-dedupe, token budget truncation, and the nothing-relevant verdict; no
-UI, no live calls.
+Shipped: `JournalRetriever` + `RetrievedContext` in
+`ReflectAI/Retrieval/`. One query embedding → KNN (floor 1.25, echo
+discipline) merged with FTS5 hits (keyword evidence is never
+floor-dropped); deterministic scoring — semantic = distance, keyword =
+0.95 + 0.01·rank, dual-match takes `min − 0.1` boost; ties break to
+recency then id. Pack assembly: ≤6 entries, ~4k-token budget with
+whitespace-boundary truncation, first source always ships, trashed/empty
+entries excluded, per-item mood + summary + stable 1-based citation id,
+`promptBlock()` renders the numbered sources M18 hands to the model.
+Honesty built in: empty pack ⇒ `.nothingRelevant` verdict (weak context
+dropped, not padded); a failed query embedding degrades to keyword-only
+retrieval instead of failing the caller.
+**Result: 9/9 tests** — merge order + dual-match boost, dedupe, floor
+drop + honest verdict, keyword-without-embeddings, embed-failure
+degradation, budget truncation + pack closing, determinism across runs,
+recency tie-break, prompt-block format, trash exclusion. ReflectAI
+48/48; app builds. No UI, no live calls — exactly as scoped.
 
 ## M18 — Ask your journal (chat + UI)
 
