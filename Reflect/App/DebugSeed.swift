@@ -27,10 +27,7 @@ enum DebugSeed {
             let service = AskService(
                 db: AppServices.database,
                 provider: AppServices.aiProvider,
-                chatModel: {
-                    (try? AppServices.settings.get(.modelReflection))
-                        ?? "anthropic/claude-sonnet-4.6"
-                },
+                chatModel: { AppServices.chatModelId },
                 embeddingModel: { AppServices.embeddingModelId })
             do {
                 let exchange = try await service.ask(question: question)

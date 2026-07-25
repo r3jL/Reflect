@@ -80,21 +80,30 @@ than you'd expected"); adversarial "capital of France" **declined in
 voice** ("That kind of question lives outside these pages") — the
 model-level defense firing on weak context. Chat spend: $0.007/2 calls.
 
-## M19 — The local adapter (Ollama, FR-025 completed)
+## M19 — The local adapter (Ollama, FR-025 completed) ✅ (2026-07-25)
 
-Generalize the transport: `OpenAICompatibleProvider` core (base URL +
-optional key) with `OpenRouterProvider` as today's configuration and
-**`OllamaProvider: LocalLlmProvider`** (localhost `/v1`, `isAvailable`
-health probe, local model listing via `/api/tags`). Settings gains a
-**provider picker** (OpenRouter / Ollama) plus local chat-model fields
-shown when Ollama is selected; embeddings pinned to bge-m3 on both sides
-(DEC-P2-05). The orchestrator, chat, and search resolve their provider
-through one settings-driven closure — the spec's §1.3 toggle, real.
-Pipeline gates extend naturally: Ollama selected but not running behaves
-like offline (jobs wait; a quiet hint in Settings).
-**Exit:** transport tests against the stub (both configurations); provider
-resolution tests; live smoke gated on Ollama being installed — otherwise
-documented as the milestone's human check.
+Shipped: transport generalized to `OpenAICompatibleProvider` (base URL +
+optional key; `OpenRouterProvider` preserved as a typealias — zero call
+sites touched). **`OllamaProvider: LocalLlmProvider`** — the M10 protocol
+finally implemented: local `/v1` chat + embeddings (keyless, DEC-P2-04),
+cached `isAvailable` + async `probe()` (1.5s timeout; the pipeline gate
+reads it synchronously, so **Ollama-not-running behaves exactly like
+offline**), `/api/tags` model listing. App: `RoutingProvider` facade —
+every consumer (stages, semantic search, chat, lead) resolves the settings
+toggle *at call time*; provider-aware model ids (`bge-m3` local vs
+`baai/bge-m3` cloud — same weights, DEC-P2-05); probe kicked at launch
+before the sweep and on provider change. Settings: OpenRouter/Ollama
+segmented picker; Ollama section with running-status + Check, local
+chat-model field, installed-model list, and the pull-bge-m3 note.
+**Result:** 5 new tests (keyless header, local /v1 URLs, probe caching,
+tags parsing, malformed-tags schema error) — ReflectAI **60/60**. **Live,
+fully local** (Ollama + bge-m3 + qwen2.5:3b): ask-your-journal answered
+grounded with 3 correct citations — the query embedded by *local* bge-m3
+retrieving against *OpenRouter-produced* vectors, **validating the
+same-vector-space premise live**; a fresh entry ran the whole pipeline
+locally in 16s, all stages success on attempt 1 with contract-valid JSON
+from a 3B model. Zero cloud calls, zero spend. Provider restored to
+OpenRouter after the smoke (the toggle is in ⌘,).
 
 ## M20 — Phase 2 hardening & exit
 

@@ -9,6 +9,10 @@ final class SettingsModel {
     private let settings = AppServices.settings
 
     var aiEnabled = false
+    var provider = "openrouter"
+    var localChatModel = "qwen2.5:7b"
+    private(set) var ollamaRunning = false
+    private(set) var localModels: [String] = []
     var extractionModel = "google/gemini-2.5-flash"
     var reflectionModel = "anthropic/claude-sonnet-4.6"
     var sttModel = "large-v3-turbo"
@@ -26,6 +30,8 @@ final class SettingsModel {
             monthCost = total.costEstimate
         }
         aiEnabled = (try? settings.getBool(.aiEnabled)) ?? false
+        provider = (try? settings.get(.aiProvider)) ?? "openrouter"
+        localChatModel = (try? settings.get(.localChatModel)) ?? "qwen2.5:7b"
         extractionModel =
             (try? settings.get(.modelExtraction)) ?? "google/gemini-2.5-flash"
         reflectionModel =
@@ -37,6 +43,8 @@ final class SettingsModel {
 
     func persist() {
         try? settings.setBool(.aiEnabled, aiEnabled)
+        try? settings.set(.aiProvider, provider)
+        try? settings.set(.localChatModel, localChatModel)
         try? settings.set(.modelExtraction, extractionModel)
         try? settings.set(.modelReflection, reflectionModel)
         try? settings.set(.modelEmbedding, "bge-m3")
@@ -56,6 +64,20 @@ final class SettingsModel {
         KeychainStore.delete(account: KeychainStore.openRouterKeyAccount)
         keyStored = false
     }
+
+    /// Probes Ollama and refreshes the local model list (M19).
+    func probeOllama() {
+        Task { [weak self] in
+            let running = await AppServices.ollamaProvider.probe()
+            let models = running
+                ? ((try? await AppServices.ollamaProvider.listLocalModels()) ?? [])
+                : []
+            await MainActor.run {
+                self?.ollamaRunning = running
+                self?.localModels = models
+            }
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -65,9 +87,44 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 34) {
             section("Intelligence") {
                 themedToggle("Enable AI enrichment", isOn: $model.aiEnabled)
-                Text("Extraction, reflection and embeddings run only when enabled and a key is set. The journal is fully usable without it.")
+                Picker("", selection: $model.provider) {
+                    Text("OpenRouter (cloud)").tag("openrouter")
+                    Text("Ollama (this Mac)").tag("ollama")
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 320)
+                Text("Extraction, reflection and embeddings run only when enabled and the chosen provider is reachable. The journal is fully usable without AI.")
                     .font(Typography.sans(11))
                     .foregroundStyle(Theme.ink4)
+            }
+
+            if model.provider == "ollama" {
+                section("Local models") {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(model.ollamaRunning ? Theme.Mood.calm.dot : Theme.ink4)
+                            .frame(width: 6, height: 6)
+                        Text(model.ollamaRunning
+                            ? "Ollama is running."
+                            : "Ollama isn't running — start it with `ollama serve`.")
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.ink3)
+                        Button("Check") { model.probeOllama() }
+                            .buttonStyle(.plain)
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    labeledField("Chat model", text: $model.localChatModel)
+                    if !model.localModels.isEmpty {
+                        Text("Installed: \(model.localModels.joined(separator: " · "))")
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.ink4)
+                    }
+                    Text("Embeddings use bge-m3 locally — the same model as the cloud, so nothing re-indexes when you switch. Pull it once with `ollama pull bge-m3`.")
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.ink4)
+                }
             }
 
             section("OpenRouter API key") {
@@ -155,9 +212,18 @@ struct SettingsView: View {
         .padding(36)
         .frame(width: 480)
         .background(Theme.paper)
-        .onAppear { model.load() }
+        .onAppear {
+            model.load()
+            model.probeOllama()
+        }
         .onDisappear { model.persist() }
         .onChange(of: model.aiEnabled) { model.persist() }
+        .onChange(of: model.provider) {
+            model.persist()
+            model.probeOllama()
+            AppServices.orchestrator.kick()
+        }
+        .onChange(of: model.localChatModel) { model.persist() }
         .onChange(of: model.extractionModel) { model.persist() }
         .onChange(of: model.reflectionModel) { model.persist() }
         .onChange(of: model.sttModel) { model.persist() }

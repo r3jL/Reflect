@@ -10,6 +10,7 @@ public struct SettingsRepository {
         case modelExtraction = "ai.model.extraction"
         case modelReflection = "ai.model.reflection"
         case modelEmbedding = "ai.embedding.model"
+        case localChatModel = "ai.local.model.chat"
         case sttModel = "stt.model"
         case appLock = "security.app_lock"
     }

@@ -34,22 +34,74 @@ enum AppServices {
 
     static let networkMonitor = NetworkMonitor()
 
-    /// Gates per AC-004/AC-025: AI on + key present + online, else jobs
-    /// simply stay pending.
-    static var aiIsConfigured: Bool {
-        ((try? settings.getBool(.aiEnabled)) ?? false)
-            && KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount) != nil
-    }
+    // MARK: Provider selection (M19 — the §1.3 cloud↔local toggle)
 
-    /// Shared cloud adapter — pipeline stages and the Remember overlay's
-    /// lead/semantic calls all go through here.
-    static let aiProvider = OpenRouterProvider(keyProvider: {
+    static let openRouterProvider = OpenAICompatibleProvider(keyProvider: {
         KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount)
     })
+    static let ollamaProvider = OllamaProvider()
 
-    /// The embeddings model id OpenRouter expects (settings hold the
-    /// canonical name).
+    static var usingOllama: Bool {
+        (try? settings.get(.aiProvider)) == "ollama"
+    }
+
+    /// Everything — pipeline stages, semantic search, chat — routes
+    /// through this facade, so the settings toggle applies at call time.
+    static let aiProvider: any AiProvider = RoutingProvider()
+
+    struct RoutingProvider: AiProvider {
+        func structuredChat<Out: Decodable & Sendable>(
+            model: String, system: String, user: String, maxTokens: Int,
+            as output: Out.Type
+        ) async throws -> (Out, AiUsage) {
+            try await AppServices.resolvedProvider.structuredChat(
+                model: model, system: system, user: user,
+                maxTokens: maxTokens, as: output)
+        }
+
+        func embed(model: String, texts: [String]) async throws -> ([[Float]], AiUsage) {
+            try await AppServices.resolvedProvider.embed(model: model, texts: texts)
+        }
+    }
+
+    private static var resolvedProvider: any AiProvider {
+        usingOllama ? ollamaProvider : openRouterProvider
+    }
+
+    /// Gates per AC-004/AC-025: AI on + a usable provider, else jobs
+    /// simply stay pending. Ollama-not-running behaves like offline.
+    static var aiIsConfigured: Bool {
+        guard (try? settings.getBool(.aiEnabled)) ?? false else { return false }
+        return usingOllama
+            ? ollamaProvider.isAvailable
+            : KeychainStore.cachedGet(account: KeychainStore.openRouterKeyAccount) != nil
+    }
+
+    // MARK: Model ids (provider-aware)
+
+    static var extractionModelId: String {
+        usingOllama
+            ? localChatModelId
+            : (try? settings.get(.modelExtraction)) ?? "google/gemini-2.5-flash"
+    }
+
+    static var reflectionModelId: String {
+        usingOllama
+            ? localChatModelId
+            : (try? settings.get(.modelReflection)) ?? "anthropic/claude-sonnet-4.6"
+    }
+
+    /// Chat (ask-your-journal + search lead) follows the reflection model.
+    static var chatModelId: String { reflectionModelId }
+
+    static var localChatModelId: String {
+        (try? settings.get(.localChatModel)) ?? "qwen2.5:7b"
+    }
+
+    /// bge-m3 on both providers (DEC-P2-05, same vector space) — only the
+    /// id differs: OpenRouter namespaces it, Ollama doesn't.
     static var embeddingModelId: String {
+        if usingOllama { return "bge-m3" }
         let raw = (try? settings.get(.modelEmbedding)) ?? "bge-m3"
         return raw == "bge-m3" ? "baai/bge-m3" : raw
     }
@@ -59,16 +111,10 @@ enum AppServices {
         let runners: [PipelineJob.Stage: any PipelineStageRunner] = [
             .extraction: ExtractionStage(
                 db: database, provider: provider,
-                model: {
-                    (try? settings.get(.modelExtraction))
-                        ?? "google/gemini-2.5-flash"
-                }),
+                model: { extractionModelId }),
             .reflection: ReflectionStage(
                 db: database, provider: provider,
-                model: {
-                    (try? settings.get(.modelReflection))
-                        ?? "anthropic/claude-sonnet-4.6"
-                }),
+                model: { reflectionModelId }),
             .embedding: EmbeddingStage(
                 db: database, provider: provider,
                 model: { embeddingModelId }),

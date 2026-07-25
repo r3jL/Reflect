@@ -1,22 +1,29 @@
-// The v1 cloud adapter (§3.4): one OpenAI-compatible OpenRouter endpoint
-// for chat + embeddings. Strict about output: JSON is decoded into the
-// caller's type; a mismatch gets exactly one corrective retry, then fails
-// as `.schema` so the pipeline can store null + warning.
+// The OpenAI-compatible transport (§3.4, generalized in M19): one core
+// speaks to OpenRouter (cloud, keyed) and Ollama (local /v1, keyless)
+// alike. Strict about output: JSON is decoded into the caller's type; a
+// mismatch gets exactly one corrective retry, then fails as `.schema` so
+// the pipeline can store null + warning.
 import Foundation
 
-public final class OpenRouterProvider: AiProvider {
+/// The cloud configuration keeps its historical name at every call site.
+public typealias OpenRouterProvider = OpenAICompatibleProvider
+
+public final class OpenAICompatibleProvider: AiProvider {
     private let keyProvider: @Sendable () -> String?
     private let session: URLSession
     private let baseURL: URL
+    private let requiresKey: Bool
 
     public init(
-        keyProvider: @escaping @Sendable () -> String?,
+        keyProvider: @escaping @Sendable () -> String? = { nil },
         session: URLSession = .shared,
-        baseURL: URL = URL(string: "https://openrouter.ai/api/v1")!
+        baseURL: URL = URL(string: "https://openrouter.ai/api/v1")!,
+        requiresKey: Bool = true
     ) {
         self.keyProvider = keyProvider
         self.session = session
         self.baseURL = baseURL
+        self.requiresKey = requiresKey
     }
 
     // MARK: - AiProvider
@@ -91,12 +98,15 @@ public final class OpenRouterProvider: AiProvider {
     // MARK: - Transport
 
     private func post(path: String, body: [String: Any]) async throws -> Data {
-        guard let key = keyProvider(), !key.isEmpty else {
-            throw AiError.notConfigured
+        let key = keyProvider()
+        if requiresKey {
+            guard let key, !key.isEmpty else { throw AiError.notConfigured }
         }
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        if let key, !key.isEmpty {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Reflect", forHTTPHeaderField: "X-Title")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

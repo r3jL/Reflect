@@ -113,10 +113,7 @@ final class RememberModel {
         let service = AskService(
             db: AppServices.database,
             provider: AppServices.aiProvider,
-            chatModel: {
-                (try? AppServices.settings.get(.modelReflection))
-                    ?? "anthropic/claude-sonnet-4.6"
-            },
+            chatModel: { AppServices.chatModelId },
             embeddingModel: { AppServices.embeddingModelId })
         let priorThread = priorExchanges
 
@@ -267,15 +264,14 @@ final class RememberModel {
             guard !Task.isCancelled, let self else { return }
             do {
                 let (out, usage) = try await AppServices.aiProvider.structuredChat(
-                    model: (try? AppServices.settings.get(.modelReflection))
-                        ?? "anthropic/claude-sonnet-4.6",
+                    model: AppServices.chatModelId,
                     system: SearchPrompts.system,
                     user: SearchPrompts.user(query: q, resultCount: resultCount),
                     maxTokens: 80,
                     as: SearchPrompts.Lead.self)
                 try? AppServices.usage.record(
                     entryId: nil, stage: "search",
-                    model: (try? AppServices.settings.get(.modelReflection)) ?? "",
+                    model: AppServices.chatModelId,
                     promptTokens: usage.promptTokens,
                     completionTokens: usage.completionTokens,
                     costEstimate: nil)

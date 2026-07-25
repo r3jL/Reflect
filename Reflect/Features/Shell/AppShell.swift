@@ -50,8 +50,12 @@ struct AppShell: View {
         .background(Theme.paper)
         .ignoresSafeArea()
         .onAppear {
-            // FR-020: launch sweep — drain anything left pending.
-            AppServices.orchestrator.kick()
+            // FR-020: launch sweep — probe the local provider first so the
+            // gate sees fresh availability, then drain anything pending.
+            Task {
+                await AppServices.ollamaProvider.probe()
+                AppServices.orchestrator.kick()
+            }
         }
         .onReceive(
             NotificationCenter.default.publisher(for: .reflectShowTrash)
