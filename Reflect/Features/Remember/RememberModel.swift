@@ -29,9 +29,23 @@ final class RememberModel {
     var opened: Entry?
     private(set) var openedMood: Theme.Mood?
 
+    // Ask-your-journal thread (ephemeral — dies with the overlay, DEC-P2-02)
+    struct ChatExchange: Identifiable, Equatable {
+        let id = UUID()
+        let question: String
+        let answer: String
+        let cited: [RetrievedContext.Item]
+        let declined: Bool
+    }
+
+    private(set) var thread: [ChatExchange] = []
+    private(set) var asking = false
+    private(set) var askError: String?
+
     private var searchTask: Task<Void, Never>?
     private var semanticTask: Task<Void, Never>?
     private var leadTask: Task<Void, Never>?
+    private var priorExchanges: [AskExchange] = []
 
     /// Facet display order (design's ordering, adapted to real data).
     private static let facetOrder = [
@@ -78,6 +92,51 @@ final class RememberModel {
     func refresh() {
         guard !isEmptyState else { return }
         runSearch()
+    }
+
+    // MARK: - Ask your journal (M18)
+
+    var canAsk: Bool { AppServices.aiIsConfigured }
+
+    var looksLikeQuestion: Bool {
+        query.trimmingCharacters(in: .whitespaces).hasSuffix("?")
+    }
+
+    /// Asks the current query as a question. Grounded or declined — never
+    /// invented; the thread survives failures untouched.
+    func ask() {
+        let question = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canAsk, !question.isEmpty, !asking else { return }
+        askError = nil
+        asking = true
+
+        let service = AskService(
+            db: AppServices.database,
+            provider: AppServices.aiProvider,
+            chatModel: {
+                (try? AppServices.settings.get(.modelReflection))
+                    ?? "anthropic/claude-sonnet-4.6"
+            },
+            embeddingModel: { AppServices.embeddingModelId })
+        let priorThread = priorExchanges
+
+        Task { [weak self] in
+            do {
+                let exchange = try await service.ask(
+                    question: question, thread: priorThread)
+                guard let self else { return }
+                self.priorExchanges.append(exchange)
+                self.thread.append(ChatExchange(
+                    question: exchange.question,
+                    answer: exchange.answer,
+                    cited: exchange.cited,
+                    declined: exchange.declined))
+                self.asking = false
+            } catch {
+                self?.asking = false
+                self?.askError = "Reflect couldn't reach the model — try again."
+            }
+        }
     }
 
     // MARK: - Search

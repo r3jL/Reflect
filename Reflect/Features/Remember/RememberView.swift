@@ -1,6 +1,7 @@
 // The Remember overlay (§3.6): full-screen blur, a giant serif question,
 // grouped results, suggestion chips. A chosen memory opens the read view
 // above the overlay; ESC walks back out.
+import ReflectAI
 import ReflectCore
 import SwiftUI
 
@@ -23,6 +24,9 @@ struct RememberView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     searchField
                     lead
+                    if !model.thread.isEmpty || model.asking || model.askError != nil {
+                        conversation.padding(.top, 30)
+                    }
                     if model.isEmptyState {
                         chips.padding(.top, 24)
                     } else {
@@ -76,6 +80,13 @@ struct RememberView: View {
             .font(Typography.serif(38, weight: .light))
             .foregroundStyle(Theme.ink)
             .focused($searchFocused)
+            .onSubmit {
+                if model.canAsk && model.looksLikeQuestion { model.ask() }
+            }
+
+            if !model.isEmptyState {
+                askButton
+            }
 
             Button(action: onClose) {
                 Image(systemName: "xmark")
@@ -92,6 +103,137 @@ struct RememberView: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.hair2).frame(height: 1)
         }
+    }
+
+    /// Ask affordance (M18). With AI off, it stays visible but explains
+    /// itself instead of acting.
+    private var askButton: some View {
+        Button(action: { model.ask() }) {
+            HStack(spacing: 6) {
+                if model.asking {
+                    BreathingDot(color: Theme.accent)
+                } else {
+                    Circle().fill(model.canAsk ? Theme.accent : Theme.ink4)
+                        .frame(width: 5, height: 5)
+                }
+                Text(model.asking ? "listening…" : "Ask")
+                    .font(Typography.sans(12, weight: .medium))
+                    .tracking(0.4)
+            }
+            .foregroundStyle(model.canAsk ? Theme.accent : Theme.ink4)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                    .stroke(model.canAsk ? Theme.accent : Theme.hair2, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!model.canAsk || model.asking)
+        .help(model.canAsk
+            ? "Ask your journal — answers come only from your entries"
+            : "Asking needs AI enrichment enabled in Settings (⌘,)")
+    }
+
+    // MARK: - Conversation (M18)
+
+    private var conversation: some View {
+        VStack(alignment: .leading, spacing: 30) {
+            ForEach(model.thread) { exchange in
+                exchangeView(exchange)
+            }
+            if model.asking {
+                HStack(spacing: 7) {
+                    BreathingDot(color: Theme.accentSoft)
+                    Text("listening…")
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.ink4)
+                }
+            }
+            if let error = model.askError {
+                HStack(spacing: 8) {
+                    Text(error)
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.ink4)
+                    Button("try again") { model.ask() }
+                        .buttonStyle(.plain)
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+        }
+    }
+
+    private func exchangeView(_ exchange: RememberModel.ChatExchange) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Text("You asked".uppercased())
+                    .font(Typography.sans(10))
+                    .tracking(1.6)
+                    .foregroundStyle(Theme.ink4)
+                Text(exchange.question)
+                    .font(Typography.sans(12.5))
+                    .foregroundStyle(Theme.ink3)
+            }
+
+            Text(exchange.answer)
+                .font(Typography.serifItalic(19))
+                .foregroundStyle(exchange.declined ? Theme.ink3 : Theme.ink)
+                .lineSpacing(7)
+
+            if !exchange.cited.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Text("From your entries".uppercased())
+                            .font(Typography.sans(10))
+                            .tracking(1.8)
+                            .foregroundStyle(Theme.accentSoft)
+                        Rectangle().fill(Theme.hair).frame(height: 1)
+                    }
+                    ForEach(exchange.cited) { item in
+                        citedRow(item)
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Theme.paper)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Theme.hair, lineWidth: 1))
+        )
+    }
+
+    private func citedRow(_ item: RetrievedContext.Item) -> some View {
+        Button(action: {
+            if let entry = try? AppServices.entries.fetch(id: item.entryId) {
+                withAnimation(.easeOut(duration: 0.3)) { model.open(entry) }
+            }
+        }) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text(item.entryDate)
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.ink4)
+                    if let mood = item.moodLabel {
+                        Text(mood)
+                            .font(Typography.sans(11))
+                            .foregroundStyle(Theme.ink4)
+                    }
+                }
+                Text(EchoService.snippet(item.text))
+                    .font(Typography.serif(16))
+                    .foregroundStyle(Theme.ink2)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

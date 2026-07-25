@@ -56,22 +56,29 @@ degradation, budget truncation + pack closing, determinism across runs,
 recency tie-break, prompt-block format, trash exclusion. ReflectAI
 48/48; app builds. No UI, no live calls — exactly as scoped.
 
-## M18 — Ask your journal (chat + UI)
+## M18 — Ask your journal (chat + UI) ✅ (2026-07-25)
 
-Prompt contract (`AskPrompts`): Reflect's voice; answer **only** from the
-provided entries; cite the entries used by date; when the pack is empty or
-the verdict is nothing-relevant, say so plainly ("Your journal doesn't
-seem to hold this") — never general knowledge, never invention. In-overlay
-thread (in-memory, DEC-P2-02) with follow-ups re-retrieving per question.
-UI in the Remember overlay: an **Ask** affordance (and auto-detect for
-question-shaped queries); the answer as a serif card in the AI's italic
-voice, "From your entries" beneath it as cited rows that open the read
-view; "listening…" while the model works. Ledger stage `chat`. AI-off:
-the affordance explains chat needs AI enrichment enabled.
-**Exit:** canned-provider tests (context reaches the prompt verbatim;
-empty pack → decline path; provider failure → quiet error, thread
-intact); live smoke: real questions against the real journal, spend
-recorded.
+Shipped: `AskPrompts` (grounding contract: sources are the only truth,
+decline plainly, cite by date in prose — never "[1]" in the answer text)
++ `AskService` with **two decline layers**: an empty/nothing-relevant pack
+declines *deterministically without a model call* (no spend, zero
+invention risk), and the prompt contract handles weak-context cases at
+the model level. Phantom citation ids filtered; follow-ups carry the last
+3 exchanges; ledger stage `chat`. UI in Remember: **Ask** button (accent
+outline; breathing "listening…"; with AI off it stays visible and
+explains itself), Return submits question-shaped queries, exchanges
+render as bordered cards — question kicker, answer in Reflect's italic
+serif, "From your entries" cited rows that open the read view; errors
+are quiet with try-again and the thread survives them. Ephemeral by
+construction (fresh model per overlay, DEC-P2-02). `REFLECT_ASK` debug
+hook = headless live smoke.
+**Result:** 7/7 service tests (context-verbatim, decline-without-call,
+phantom-citation filter, thread context, model-decline marking, failure
+propagation, chat ledger) — ReflectAI **55/55**. Live: real question
+answered correctly with the right date + citation ("smaller and kinder
+than you'd expected"); adversarial "capital of France" **declined in
+voice** ("That kind of question lives outside these pages") — the
+model-level defense firing on weak context. Chat spend: $0.007/2 calls.
 
 ## M19 — The local adapter (Ollama, FR-025 completed)
 

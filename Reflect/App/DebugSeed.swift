@@ -5,6 +5,7 @@
 import CoreGraphics
 import Foundation
 import ImageIO
+import ReflectAI
 import ReflectCore
 import UniformTypeIdentifiers
 
@@ -12,6 +13,36 @@ enum DebugSeed {
     static func runIfRequested() {
         seedEntriesIfRequested()
         seedMediaIfRequested()
+        askIfRequested()
+    }
+
+    /// REFLECT_ASK="question": run the full live ask flow (retrieval +
+    /// chat) against the real journal and print the answer — the M18
+    /// headless smoke.
+    private static func askIfRequested() {
+        guard let question = ProcessInfo.processInfo.environment["REFLECT_ASK"],
+              !question.isEmpty
+        else { return }
+        Task {
+            let service = AskService(
+                db: AppServices.database,
+                provider: AppServices.aiProvider,
+                chatModel: {
+                    (try? AppServices.settings.get(.modelReflection))
+                        ?? "anthropic/claude-sonnet-4.6"
+                },
+                embeddingModel: { AppServices.embeddingModelId })
+            do {
+                let exchange = try await service.ask(question: question)
+                print("ASK Q: \(exchange.question)")
+                print("ASK A: \(exchange.answer)")
+                print("ASK cited: \(exchange.cited.map(\.entryDate).joined(separator: ", "))")
+                print("ASK declined: \(exchange.declined)")
+            } catch {
+                print("ASK failed: \(error)")
+            }
+            fflush(stdout)
+        }
     }
 
     /// REFLECT_SEED_MEDIA=1: run one generated photo through the real
