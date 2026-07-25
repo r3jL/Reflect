@@ -105,17 +105,31 @@ locally in 16s, all stages success on attempt 1 with contract-valid JSON
 from a 3B model. Zero cloud calls, zero spend. Provider restored to
 OpenRouter after the smoke (the toggle is in ⌘,).
 
-## M20 — Phase 2 hardening & exit
+## M20 — Phase 2 hardening & exit ✅ (2026-07-25) → `v0.3.0-phase2`
 
-Grounding drill: questions with no relevant entries must decline (never
-answer from world knowledge — adversarial cases in tests); provider
-failures mid-thread leave the thread intact; provider-swap drill
-(openrouter ↔ ollama mid-session: pipeline, chat, and search all follow;
-mixed-provenance vectors retrieve together). Chat spend visible in the
-Settings month line (stage `chat`). Retrieval quality spot-check against
-the real journal; echo/context distance floors re-calibrated with more
-data if needed. Docs updated.
-**Exit:** tag **`v0.3.0-phase2`**.
+**Grounding drill** (`GroundingDrillTests` + live): the contract's
+load-bearing clauses are asserted to reach the model on every call (the
+layer-2 defense is tested, not assumed); weak-but-nonzero context reaches
+the model and its decline is honored as a decline; a mid-thread provider
+failure leaves zero state (no ledger row, service stateless, same thread
+retries cleanly). **Live adversarial:** "17×23 / who invented the
+telephone" → declined in voice, zero citations, no arithmetic attempted.
+**Provider-swap / mixed provenance:** across M19+M20 both directions ran
+live — local bge-m3 queries over cloud-produced vectors, then a **cloud
+query retrieving and citing the entry embedded locally** (2026-06-28) —
+one vector space, provider-independent, as §3.4 promised. Mid-session
+swaps are structural (`RoutingProvider` resolves per call). **Chat spend
+line:** Settings' month section now shows "of which N asks · ≈$"
+(`monthStageTotal`). Retrieval spot-checks stayed healthy (echo distances
+0.67–0.89, citations correct throughout) — floors unchanged.
+**Suites: ReflectAI 63/63 · ReflectCore 20/20 · ReflectMedia 4/4 ·
+ReflectSTT 2/2 = 89 tests.**
+
+**Phase 2 complete → `v0.3.0-phase2`.** The journal now: understands
+every entry (P1), answers questions about your life from your own words
+only (M17–18), and can do all of it without the internet (M19). Next
+frontiers: Phase 3 memory (gated on CLR-01 — a design conversation) and
+Phase 4 chapters.
 
 ---
 

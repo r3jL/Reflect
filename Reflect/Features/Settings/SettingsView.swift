@@ -22,12 +22,18 @@ final class SettingsModel {
     private(set) var keyStored = false
     private(set) var monthCalls = 0
     private(set) var monthCost: Double?
+    private(set) var monthChatCalls = 0
+    private(set) var monthChatCost: Double?
 
     func load() {
         let month = String(DBFormat.entryDate(.now).prefix(7))
         if let total = try? AppServices.usage.monthTotal(month) {
             monthCalls = total.calls
             monthCost = total.costEstimate
+        }
+        if let chat = try? AppServices.usage.monthStageTotal(month, stage: "chat") {
+            monthChatCalls = chat.calls
+            monthChatCost = chat.costEstimate
         }
         aiEnabled = (try? settings.getBool(.aiEnabled)) ?? false
         provider = (try? settings.get(.aiProvider)) ?? "openrouter"
@@ -185,6 +191,13 @@ struct SettingsView: View {
                     } ?? "≈ $0")
                         .font(Typography.sans(12))
                         .foregroundStyle(Theme.ink2)
+                }
+                if model.monthChatCalls > 0 {
+                    Text(String(
+                        format: "of which %d asks · ≈ $%.4f",
+                        model.monthChatCalls, model.monthChatCost ?? 0))
+                        .font(Typography.sans(11))
+                        .foregroundStyle(Theme.ink4)
                 }
                 Text("Local estimate from token counts; your OpenRouter dashboard is the billing truth.")
                     .font(Typography.sans(11))

@@ -321,6 +321,16 @@ final class ReflectCoreTests: XCTestCase {
         let empty = try usage.monthTotal("2026-06")
         XCTAssertEqual(empty.calls, 0)
         XCTAssertNil(empty.costEstimate)
+
+        // Per-stage share (M20 chat spend line)
+        try usage.record(
+            entryId: nil, stage: "chat", model: "anthropic/claude-sonnet-4.6",
+            promptTokens: 700, completionTokens: 90, costEstimate: 0.0034, now: july)
+        let chat = try usage.monthStageTotal("2026-07", stage: "chat")
+        XCTAssertEqual(chat.calls, 1)
+        XCTAssertEqual(try XCTUnwrap(chat.costEstimate), 0.0034, accuracy: 1e-6)
+        let extraction = try usage.monthStageTotal("2026-07", stage: "extraction")
+        XCTAssertEqual(extraction.calls, 1)
     }
 
     // MARK: - Browse, actions, stats (M15)
